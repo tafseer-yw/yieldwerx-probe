@@ -1,0 +1,4 @@
+interface:
+  display_name: "API Recon"
+  short_description: "Discover and reconcile live API contracts"
+  default_prompt: "Use $api-recon to reconcile OpenAPI with observed application traffic."

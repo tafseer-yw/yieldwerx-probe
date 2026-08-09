@@ -1,0 +1,18 @@
+{
+  "name": "yieldwerx",
+  "description": "Company-managed Claude plugins for YieldWerx engineering and quality workflows.",
+  "owner": {
+    "name": "Tafseer Haider"
+  },
+  "allowCrossMarketplaceDependenciesOn": ["yieldwerx-company"],
+  "renames": {
+    "yieldwerx-probe": "yw"
+  },
+  "plugins": [
+    {
+      "name": "yw",
+      "source": "./plugins/yieldwerx-probe",
+      "description": "YieldWerx QA workflows and product knowledge through one short yw namespace."
+    }
+  ]
+}

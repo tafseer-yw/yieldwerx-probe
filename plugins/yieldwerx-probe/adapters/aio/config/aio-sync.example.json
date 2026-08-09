@@ -1,0 +1,21 @@
+{
+  "_note": "Non-secret AIO Tests sync conventions/mappings. Secrets (AIO_API_TOKEN, optional AIO_EMAIL) come from environment variables ONLY — never store a token here. Invoke the consumer's configured syncCases command; dry-run must remain the default. Authority: the installed sync-cases skill.",
+  "apiBaseUrl": "https://tcms.aiojiraapps.com/aio-tcms/api/v1",
+  "projectKey": "YWPD",
+  "auth": "aioauth",
+  "scriptType": "BDD",
+  "folderTemplate": "Module-Level End-to-End Testcases/{feature}/QA",
+  "defaults": {
+    "status": "Published",
+    "type": "",
+    "owner": "",
+    "tags": [],
+    "_labels_doc": "Each scenario's @testtype:<level> tag (unit/integration/api/component/e2e/contract/performance/security — the PROBE test-type classification) is pushed to the AIO case Labels field. Any entries here are merged into every case's Labels in addition to the per-scenario test type.",
+    "labels": []
+  },
+  "requirement": {
+    "_doc": "Requirement link is derived from the PRD/requirements doc per feature: the first Jira issue key found in docs/PRDs/<feature>.md (excluding AC-/TC-/CAT- ids) is linked; otherwise the PRD title (or the slug) is used as a label. Override per feature via requirementMap.",
+    "prdPathTemplate": "docs/PRDs/{feature}.md"
+  },
+  "requirementMap": {}
+}

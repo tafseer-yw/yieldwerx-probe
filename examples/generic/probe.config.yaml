@@ -1,0 +1,29 @@
+schemaVersion: 1
+probeVersion: 2.9.2
+profile: generic
+
+paths:
+  requirements: docs/requirements
+  features: features
+  ledgers: docs/qa
+  artifacts: .probe/artifacts
+  testData: test-data
+
+commands: {}
+
+integrations:
+  caseManagement:
+    provider: none
+    required: false
+  ci:
+    provider: generic
+  browser:
+    provider: none
+  knowledge:
+    provider: none
+    required: false
+
+policies:
+  caseFormat: gherkin
+  caseLanguage: procedural
+  preserveManualTag: true

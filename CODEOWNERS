@@ -1,0 +1,14 @@
+# YieldWerx PROBE code owner
+#
+# Sole owner:
+#   Azure Repos username: tafseer.haider
+#   Email: tafseer.haider@yieldwerx.com
+#
+# This file documents ownership for every current and future repository path.
+#
+# Azure Repos enforcement:
+# Configure an "Automatically included reviewers" branch policy on `main`
+# for repository path `/`, select tafseer.haider@yieldwerx.com, and make the
+# reviewer required. CODEOWNERS alone does not enforce Azure Repos approval.
+
+* tafseer.haider@yieldwerx.com

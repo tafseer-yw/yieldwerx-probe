@@ -1,0 +1,4 @@
+interface:
+  display_name: 'Forge API Tests'
+  short_description: 'Create contract-driven API automation'
+  default_prompt: 'Use $forge-api-tests to implement approved API tests from reconciled contracts.'

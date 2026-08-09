@@ -1,0 +1,14 @@
+{
+  "name": "yw",
+  "description": "YieldWerx QA workflows and product knowledge through one short yw namespace.",
+  "version": "2.9.2",
+  "author": {
+    "name": "Tafseer Haider"
+  },
+  "dependencies": [
+    {
+      "name": "yieldwerx-knowledgebase",
+      "marketplace": "yieldwerx-company"
+    }
+  ]
+}

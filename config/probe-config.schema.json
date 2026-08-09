@@ -1,0 +1,100 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://yieldwerx.example/schemas/probe-config.schema.json",
+  "title": "PROBE consumer configuration",
+  "type": "object",
+  "required": ["schemaVersion", "probeVersion", "paths"],
+  "additionalProperties": false,
+  "properties": {
+    "schemaVersion": {
+      "const": 1
+    },
+    "probeVersion": {
+      "type": "string",
+      "pattern": "^\\d+\\.\\d+\\.\\d+$"
+    },
+    "profile": {
+      "type": "string",
+      "default": "generic"
+    },
+    "paths": {
+      "type": "object",
+      "required": ["features", "ledgers", "artifacts"],
+      "additionalProperties": false,
+      "properties": {
+        "requirements": { "type": "string" },
+        "features": { "type": "string" },
+        "ledgers": { "type": "string" },
+        "artifacts": { "type": "string" },
+        "testData": { "type": "string" }
+      }
+    },
+    "commands": {
+      "type": "object",
+      "additionalProperties": { "type": "string" }
+    },
+    "integrations": {
+      "type": "object",
+      "properties": {
+        "knowledge": {
+          "type": "object",
+          "required": ["provider"],
+          "properties": {
+            "provider": {
+              "type": "string"
+            },
+            "required": {
+              "type": "boolean",
+              "default": false
+            },
+            "source": {
+              "type": "string"
+            },
+            "marketplace": {
+              "type": "string"
+            },
+            "plugin": {
+              "type": "string"
+            },
+            "skill": {
+              "type": "string"
+            },
+            "revision": {
+              "type": "string",
+              "pattern": "^\\d+\\.\\d+\\.\\d+$"
+            }
+          },
+          "additionalProperties": true,
+          "allOf": [
+            {
+              "if": {
+                "properties": {
+                  "source": {
+                    "const": "claude-plugin"
+                  }
+                },
+                "required": ["source"]
+              },
+              "then": {
+                "required": ["marketplace", "plugin", "skill", "revision"]
+              }
+            }
+          ]
+        }
+      },
+      "additionalProperties": {
+        "oneOf": [
+          { "type": "string" },
+          {
+            "type": "object",
+            "additionalProperties": true
+          }
+        ]
+      }
+    },
+    "policies": {
+      "type": "object",
+      "additionalProperties": true
+    }
+  }
+}

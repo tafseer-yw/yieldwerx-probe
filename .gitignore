@@ -1,0 +1,9 @@
+node_modules/
+.probe/
+dist/
+coverage/
+*.log
+*.tmp
+.env
+.env.*
+!.env.example
