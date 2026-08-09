@@ -1,0 +1,50 @@
+schemaVersion: 1
+probeVersion: 2.9.2
+profile: playwright-bdd
+
+paths:
+  requirements: docs/requirements
+  features: features
+  ledgers: docs/qa
+  artifacts: .probe/artifacts
+  testData: test-data
+
+commands:
+  lintCases: npm run probe:lint-gherkin
+  generateTests: npm run bddgen
+  requirementsCoverage: npm run coverage:req
+  lintCode: npm run lint
+  typecheck: npm run typecheck
+  runTests: npm run test:e2e
+  syncCases: npm run sync:cases
+  aioCheck: npm run aio:check
+  aioWhoami: npm run aio:whoami
+  aioFolders: npm run aio:folders
+  aioCases: npm run aio:cases
+  syncBugs: npm run bug:sync
+  uiCheck: npm run ui:check
+  uiImpact: npm run ui:impact
+
+integrations:
+  caseManagement:
+    provider: aio
+    required: false
+  ci:
+    provider: azure-pipelines
+  browser:
+    provider: playwright-mcp
+  knowledge:
+    provider: yieldwerx-knowledgebase
+    required: true
+    source: claude-plugin
+    marketplace: yieldwerx-company
+    plugin: yieldwerx-knowledgebase
+    skill: ask-yieldwerx
+    revision: 1.1.0
+
+policies:
+  caseFormat: gherkin
+  caseLanguage: procedural
+  preserveManualTag: true
+  testIdRequired: true
+  wrongBusinessDataSeverity: blocker

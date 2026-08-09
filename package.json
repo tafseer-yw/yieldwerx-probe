@@ -1,0 +1,39 @@
+{
+  "name": "@yieldwerx/probe-cli",
+  "version": "2.9.2",
+  "private": false,
+  "description": "Source, validation and distribution repository for the YieldWerx PROBE process.",
+  "author": {
+    "name": "Tafseer Haider",
+    "email": "tafseer.haider@yieldwerx.com"
+  },
+  "type": "module",
+  "bin": {
+    "probe": "plugins/yieldwerx-probe/bin/probe.mjs"
+  },
+  "files": [
+    "plugins/yieldwerx-probe/bin/",
+    "plugins/yieldwerx-probe/lib/",
+    "plugins/yieldwerx-probe/scripts/",
+    "plugins/yieldwerx-probe/adapters/aio/",
+    "plugins/yieldwerx-probe/skills/probe-spec/scripts/",
+    "config/probe-config.schema.json",
+    "README.md",
+    "LICENSE.md"
+  ],
+  "scripts": {
+    "validate": "node scripts/validate-repository.mjs",
+    "validate:spec": "node plugins/yieldwerx-probe/skills/probe-spec/scripts/validate-spec-analysis.mjs",
+    "validate:reconciliation": "node plugins/yieldwerx-probe/skills/probe-spec/scripts/validate-spec-reconciliation.mjs",
+    "test:spec-validator": "node scripts/test-spec-validator.mjs && node scripts/test-spec-reconciliation-validator.mjs",
+    "test:cli": "node scripts/test-cli.mjs",
+    "test:owner-bypass": "node scripts/test-owner-bypass.mjs",
+    "test": "npm run validate && npm run test:spec-validator && npm run test:cli && npm run test:owner-bypass"
+  },
+  "engines": {
+    "node": ">=22.18"
+  },
+  "publishConfig": {
+    "access": "restricted"
+  }
+}

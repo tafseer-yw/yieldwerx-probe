@@ -1,0 +1,15 @@
+schemaVersion: 1
+probeVersion: 2.9.2
+profile: generic
+
+paths:
+  requirements: requirements
+  features: features
+  ledgers: docs/qa
+  artifacts: .probe/artifacts
+
+commands: {}
+integrations: {}
+policies:
+  caseFormat: gherkin
+  caseLanguage: procedural

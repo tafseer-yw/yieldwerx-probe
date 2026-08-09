@@ -1,0 +1,4 @@
+interface:
+  display_name: 'Forge Performance Tests'
+  short_description: 'Create safe threshold-gated k6 API workloads'
+  default_prompt: 'Use $forge-performance-tests to implement an approved API workload as guarded k6 performance tests.'
