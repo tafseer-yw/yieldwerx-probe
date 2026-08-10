@@ -142,10 +142,16 @@ const marketplacePlugin = marketplace.plugins?.find((plugin) => plugin.name === 
 if (marketplacePlugin?.source !== './plugins/yieldwerx-probe') {
   errors.push(`marketplace must reference ./plugins/yieldwerx-probe`);
 }
+if (marketplacePlugin?.displayName !== 'yieldWerx PROBE') {
+  errors.push(`marketplace plugin displayName must be 'yieldWerx PROBE'`);
+}
 
 const manifest = readJson('plugins/yieldwerx-probe/.claude-plugin/plugin.json');
 if (manifest.name !== 'yw') {
   errors.push(`plugin manifest name must be 'yw'`);
+}
+if (manifest.displayName !== 'yieldWerx PROBE') {
+  errors.push(`plugin displayName must be 'yieldWerx PROBE'`);
 }
 const knowledgeDependency = manifest.dependencies?.find(
   (dependency) =>

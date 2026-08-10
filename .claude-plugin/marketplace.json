@@ -11,6 +11,7 @@
   "plugins": [
     {
       "name": "yw",
+      "displayName": "yieldWerx PROBE",
       "source": "./plugins/yieldwerx-probe",
       "description": "YieldWerx QA workflows and product knowledge through one short yw namespace."
     }

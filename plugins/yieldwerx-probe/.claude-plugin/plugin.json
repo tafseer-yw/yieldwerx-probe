@@ -1,7 +1,8 @@
 {
   "name": "yw",
+  "displayName": "yieldWerx PROBE",
   "description": "YieldWerx QA workflows and product knowledge through one short yw namespace.",
-  "version": "2.9.2",
+  "version": "2.9.3",
   "author": {
     "name": "Tafseer Haider"
   },

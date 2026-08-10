@@ -1,5 +1,5 @@
 schemaVersion: 1
-probeVersion: 2.9.2
+probeVersion: 2.9.3
 profile: playwright-bdd
 
 paths:
