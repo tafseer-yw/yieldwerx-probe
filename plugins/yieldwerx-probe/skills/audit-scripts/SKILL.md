@@ -1,7 +1,7 @@
 ---
 name: audit-scripts
 user-invocable: true
-description: Use when a scripting branch is ready for independent adversarial review across its applicable UI, API, data, queue, policy, audit, integration, and chart contracts. PROBE Script Audit stage.
+description: Use when a scripting branch is ready for independent adversarial review across its applicable UI, API, data, queue, policy, audit, integration, and chart contracts. A named QA Lead or Automation Engineer may explicitly waive the exact audit scope through /bypass-gate; the audit skill itself never creates or hides a waiver. PROBE Script Audit stage.
 track: scripting
 safety: writes-local
 produces: .probe/artifacts/<feature>/70-script-audit/script-audit.md
@@ -30,7 +30,8 @@ data handling, and evidence against the approved cases and active profile.
 ## When
 
 Run after each Script Forge cycle and rerun whenever an audit-driven code
-change invalidates the previous result.
+change invalidates the previous result, unless a named allrounder explicitly
+waives the exact current commit/file-hash scope through `/bypass-gate`.
 
 ## Where
 
@@ -46,6 +47,13 @@ fail closed on any unresolved high-risk issue.
 Adversarial review of the automation branch. Independence rule: use the
 **script-auditor** agent or another fresh independent reviewer with read-only
 tools. If none is available, block; the forging context never self-certifies.
+
+This skill never silently skips itself. If a named QA Lead or Automation
+Engineer says to bypass Script Audit, stop this workflow and route the request
+to `/bypass-gate <feature> script-audit`. That skill records
+`waived — allrounder Script Audit bypass`, the exact TC inventory and
+commit/file-hash manifest, the real findings or missing review, and residual
+risk. A bare `approved`, `continue`, or Merge Gate bypass is not an audit bypass.
 
 ## Preconditions
 

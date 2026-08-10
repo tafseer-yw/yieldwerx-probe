@@ -483,6 +483,14 @@ A scoped cycle may be done while feature-level scripting remains incomplete.
 A scoped audit reports `SUBSET PASS/FAIL` with exact TC ids and never certifies
 the rest of the feature.
 
+**Allrounder bypass:** a named QA Lead or Automation Engineer may explicitly
+say `bypass Script Audit` for the whole feature or one category. Route to
+`/bypass-gate <feature> script-audit`. Claude keeps the real audit verdict and
+findings (or records `not assembled`), binds the waiver to the exact TC
+inventory and commit/file-hash manifest, and records the reason and residual
+risk. The waiver lets Stability Run begin for that exact scope; it is not PASS,
+becomes stale after any script change, and does not bypass Merge Gate.
+
 > **Example:** the first Script Audit returned a **blocker** — a mock-mode DB
 > step asserted rows the test itself had seeded, presented as engine
 > evidence. Rework made it honest (annotated `EMULATED`, live-DB verification
@@ -500,9 +508,9 @@ the rest of the feature.
 > consecutive, recording every run. Diagnose failures — never rerun blindly,
 > never green by deletion or retries.
 
-A scoped Stability Run requires a matching scoped Script Audit on the same
-commit/hash and records subset evidence only. Merge Gate still requires the
-complete confirmed automation set.
+A scoped Stability Run requires a matching scoped Script Audit PASS or current
+manifest-bound waiver and records subset evidence only. Merge Gate still
+requires the complete confirmed automation set.
 
 **You get:** `80-green-run/green-run.md` with the run log. A failure resets
 the streak and gets a root-cause note (flake-hunter helps).
@@ -518,6 +526,7 @@ the streak and gets a root-cause note (flake-hunter helps).
 
 ```
 /gate-merge <feature-slug>
+/bypass-gate <feature-slug> script-audit
 /bypass-gate <feature-slug> merge
 ```
 
@@ -525,10 +534,12 @@ the streak and gets a root-cause note (flake-hunter helps).
 **hard testId-coverage check**. An allrounder signs the ledger + report,
 then the branch merges.
 
-A named allrounder may explicitly say `bypass Merge Gate`. Claude preserves the
-report's real readiness, records the gate waiver, and allows PROBE to continue
-after the branch is actually merged. The bypass never merges the branch or
-bypasses repository permissions/branch protection.
+A named allrounder may explicitly waive Script Audit and/or say
+`bypass Merge Gate`. These are separate decisions: the audit waiver satisfies
+only the exact audit prerequisite, while the gate waiver permits progression
+past the gate. Claude preserves the report's real readiness and allows PROBE to
+continue only after the branch is actually merged. Neither bypass merges the
+branch or bypasses repository permissions/branch protection.
 
 > **Example:** the demo's Merge Gate report was assembled **NOT READY** with four
 > named human-decision items — AIO ids still pending sync, Script Audit

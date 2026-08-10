@@ -75,8 +75,9 @@ an empty selection still fails closed.
    > "Scripting is blocked until the Design Gate has a recorded human approval
    > or explicit allrounder gate bypass (PROBE rule 4)."
 2. Case Audit verdict is PASS, or the exact audit scope has its own recorded
-   allrounder Case Audit bypass. A Design Gate bypass does not silently waive
-   Case Audit.
+   allrounder Case Audit bypass whose recorded case/spec hashes still match
+   when available. A material input change makes that waiver stale. A Design
+   Gate bypass does not silently waive Case Audit.
 3. For UI scenarios, if UI Recon ran its locator inventory is present; if it
    was skipped, the ledger says so. Non-UI scenarios require their applicable
    API/event/DB/audit observability contract instead.

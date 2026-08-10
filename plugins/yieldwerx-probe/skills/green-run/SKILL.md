@@ -1,11 +1,11 @@
 ---
 name: green-run
 user-invocable: true
-description: Use when audited scripts must prove stability — full local execution loop until green ×3 consecutive (flake screen), with run evidence attached. PROBE Stability Run stage.
+description: Use when scripts with a PASS or explicitly allrounder-waived Script Audit must prove stability — full local execution loop until green ×3 consecutive (flake screen), with run evidence attached. PROBE Stability Run stage.
 track: scripting
 safety: writes-local
 produces: .probe/artifacts/<feature>/80-green-run/green-run.md (+ report copies)
-consumes: branch e2e/<feature-slug> (audit PASS)
+consumes: branch e2e/<feature-slug> (Script Audit PASS or exact allrounder Script Audit bypass)
 argument-hint: <feature-slug> [branch] [--scenario-type positive|functional|negative|edge|all] [--category CAT-NN] [--ac AC-NN] [--tc TC-id]
 ---
 
@@ -29,8 +29,10 @@ immutable consecutive-green run record.
 
 ## When
 
-Run after Script Audit passes; restart it after any code fix and reopen Script
-Audit whenever that fix changes the automation.
+Run after Script Audit passes or an allrounder explicitly bypasses Script Audit
+for the exact current scope and commit/file-hash manifest. Restart after any
+code fix; a changed manifest invalidates either the PASS evidence or waiver and
+reopens Script Audit/bypass authorization.
 
 ## Where
 
@@ -50,9 +52,14 @@ manual-only scenarios have no generated test to run.
 
 ## Preconditions
 
-- A feature-level run requires Script Audit `done (PASS)`.
-- A scoped run requires a matching scoped Script Audit PASS for the same TC
-  inventory and exact commit/file-hash manifest.
+- A feature-level run requires Script Audit `done (PASS)` or
+  `waived — allrounder Script Audit bypass` recorded feature-wide for the exact
+  current commit/file-hash manifest.
+- A scoped run requires a matching scoped Script Audit PASS or allrounder
+  Script Audit bypass for the same category/TC inventory and exact manifest.
+- The waiver must name the human allrounder and role, date, reason, missing or
+  failed review, and residual risk. A Merge Gate bypass does not substitute for
+  it, and any script change makes it stale.
 
 ## Procedure
 
@@ -63,6 +70,8 @@ manual-only scenarios have no generated test to run.
    tag/project contract for the
    feature plus required regression slice; do not hard-code Chromium or use an
    imprecise regex that selects unrelated scenarios.
+   When Script Audit is waived, copy the waiver identity, scope, manifest, and
+   real audit verdict into the run header; never label the scripts audited or PASS.
 2. Attempt up to **6 diagnostic runs** to obtain **3 consecutive** fully-green
    runs on the same recorded inputs. Record EVERY run —
    including the failures before the streak:

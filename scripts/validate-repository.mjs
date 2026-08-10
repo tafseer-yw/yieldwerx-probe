@@ -404,6 +404,8 @@ requireContent('plugins/yieldwerx-probe/skills/probe-spec/references/ledger-temp
   'Claude — transcribed from direct allrounder approval',
   'this shortcut for an unknown role',
   'Allrounder Case Audit bypass',
+  'Allrounder Script Audit bypass',
+  'bypass all audits',
   'Allrounder gate bypass',
   'Decision: bypassed',
   'PROBE Owner override',
@@ -418,6 +420,8 @@ requireContent('plugins/yieldwerx-probe/skills/gate-design/SKILL.md', [
   'transcribed from direct allrounder approval',
   'Allrounder solo approval under',
   'Allrounder Case Audit bypass',
+  '/bypass-gate <feature> case-audit',
+  'material input change makes',
   'Allrounder Design Gate bypass',
   'waived — allrounder gate bypass',
   'Do not treat a bare `approved` as an audit bypass',
@@ -426,6 +430,8 @@ requireContent('plugins/yieldwerx-probe/skills/gate-design/SKILL.md', [
 ]);
 requireContent('plugins/yieldwerx-probe/references/process/PROBE-PROCESS.md', [
   'Case Audit bypass',
+  'Script Audit bypass',
+  '`bypass all audits`',
   'Gate bypass',
   '`/bypass-gate`',
   'Done — Ops Gate bypassed',
@@ -435,15 +441,31 @@ requireContent('plugins/yieldwerx-probe/references/process/PROBE-PROCESS.md', [
 ]);
 requireContent('plugins/yieldwerx-probe/skills/bypass-gate/SKILL.md', [
   'bypass all gates',
-  'Reject `--category`',
+  'bypass all audits',
+  '`--category` with `merge`',
   'Reject `bypass everything`',
+  'waived — allrounder Script Audit bypass',
+  'Any material change to those inputs makes the waiver',
+  'Script Audit bypass satisfies Stability Run and Merge Gate',
   'Design Gate bypass authorizes',
   'Merge Gate bypass satisfies',
   'Done — Ops Gate bypassed',
-  'Claude — transcribed from direct allrounder gate bypass',
-  'A gate bypass is not approval',
+  'Claude — transcribed from direct allrounder bypass',
+  'A gate bypass is not approval, and an audit bypass is not PASS',
+]);
+requireContent('plugins/yieldwerx-probe/skills/audit-scripts/SKILL.md', [
+  '/bypass-gate <feature> script-audit',
+  'waived — allrounder Script Audit bypass',
+  'commit/file-hash manifest',
+]);
+requireContent('plugins/yieldwerx-probe/skills/green-run/SKILL.md', [
+  'waived — allrounder Script Audit bypass',
+  'changed manifest invalidates',
 ]);
 requireContent('plugins/yieldwerx-probe/skills/gate-merge/SKILL.md', [
+  'Allrounder Script Audit bypass',
+  'exact stability-run manifest',
+  'does not bypass the Merge Gate',
   'Allrounder Merge Gate bypass',
   'waived — allrounder gate bypass',
   'does not merge',
@@ -454,6 +476,7 @@ requireContent('plugins/yieldwerx-probe/skills/gate-ops/SKILL.md', [
 ]);
 requireContent('plugins/yieldwerx-probe/skills/forge-scripts/SKILL.md', [
   'allrounder Design Gate bypass',
+  'recorded case/spec hashes still match',
   'does not silently waive',
 ]);
 requireContent('plugins/yieldwerx-probe/skills/testops-promote/SKILL.md', [
@@ -722,6 +745,13 @@ requireContent('README.md', [
   'https://github.com/tafseer-yw/yieldwerx-probe.git',
   'All 34 `yw:*` skills are explicitly user-invocable',
   'examples/node-ts-spa/probe.config.yaml',
+  '<case-audit\\|script-audit\\|audits\\|design\\|merge\\|ops\\|all>',
+  '`audits` and `all` are deliberately separate',
+]);
+requireContent('docs/SKILL-USAGE.md', [
+  '<case-audit\\|script-audit\\|audits\\|design\\|merge\\|ops\\|all>',
+  '`all` means Design, Merge, and Ops gates only',
+  'commit/file-hash manifest',
 ]);
 requireContent('plugins/yieldwerx-probe/agents/build-verifier.md', [
   'Report failures verbatim',
