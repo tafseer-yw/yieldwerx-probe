@@ -9,10 +9,10 @@ import {
   loadProbeConfig,
   resolveConsumerPath,
   validateProbeConfig,
-} from '../lib/probe-config.mjs';
+} from '../plugins/yieldwerx-probe/lib/probe-config.mjs';
 
-const pluginRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
-const packageRoot = path.resolve(pluginRoot, '..', '..');
+const packageRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
+const pluginRoot = path.join(packageRoot, 'plugins', 'yieldwerx-probe');
 const packageJson = JSON.parse(fs.readFileSync(path.join(packageRoot, 'package.json'), 'utf8'));
 const cliVersion = packageJson.version;
 

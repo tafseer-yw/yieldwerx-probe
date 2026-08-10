@@ -9,10 +9,10 @@
   },
   "type": "module",
   "bin": {
-    "probe": "plugins/yieldwerx-probe/bin/probe.mjs"
+    "probe": "bin/probe.mjs"
   },
   "files": [
-    "plugins/yieldwerx-probe/bin/",
+    "bin/",
     "plugins/yieldwerx-probe/lib/",
     "plugins/yieldwerx-probe/scripts/",
     "plugins/yieldwerx-probe/adapters/aio/",

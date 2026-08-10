@@ -12,7 +12,7 @@ automation framework.
 | Process authority | `plugins/yieldwerx-probe/references/process/` | Governance, sequence, gates, policies |
 | Profiles | `plugins/yieldwerx-probe/references/profiles/` | Framework-specific compatibility guidance |
 | Adapters | `plugins/yieldwerx-probe/adapters/` | Optional external-system implementations |
-| Portable CLI | `plugins/yieldwerx-probe/bin/` | Consumer doctor, validators, reports and adapter entry points |
+| Portable CLI | `bin/` | npm-distributed consumer doctor, validators, reports and adapter entry points; kept outside the hosted plugin payload |
 | Consumer contract | `config/`, `examples/` | Portable paths, commands, integrations, policies |
 | Repository validation | `scripts/`, `tests/` | Deterministic release checks |
 

@@ -4,6 +4,11 @@ All notable changes to YieldWerx PROBE are recorded here.
 
 ## 2.9.2 — 2026-08-05
 
+- **Claude Desktop marketplace sync is now supported.** The portable npm CLI
+  entry point moved to the repository-level `bin/` directory so the hosted
+  plugin payload no longer contains a top-level executable directory that
+  Claude Desktop rejects. The published `probe` command remains unchanged, and
+  repository validation prevents the incompatible plugin layout from returning.
 - **Fixed the repository guard that was enforcing known-broken AIO payload
   shapes.** `validate-repository.mjs` required the literal strings
   `tags: aioTags(cfg, scenario)` and `labels: aioLabels(cfg, scenario)` — the

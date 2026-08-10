@@ -49,6 +49,13 @@ const expectedAgents = [
 const errors = [];
 const consumerContractMarker = '${CLAUDE_PLUGIN_ROOT}/references/configuration.md';
 
+const hostedPluginBin = path.join(pluginRoot, 'bin');
+if (fs.existsSync(hostedPluginBin) && fs.readdirSync(hostedPluginBin).length > 0) {
+  errors.push(
+    `hosted plugin must not contain a top-level bin/ directory; Claude Desktop rejects hidden executable entry points`,
+  );
+}
+
 function readJson(relativePath) {
   const absolutePath = path.join(root, relativePath);
   try {
@@ -158,7 +165,7 @@ if (packageManifest.version !== manifest.version) {
 if (packageManifest.name !== '@yieldwerx/probe-cli') {
   errors.push(`package name must be '@yieldwerx/probe-cli'`);
 }
-if (packageManifest.bin?.probe !== 'plugins/yieldwerx-probe/bin/probe.mjs') {
+if (packageManifest.bin?.probe !== 'bin/probe.mjs') {
   errors.push(`package must expose the portable 'probe' CLI`);
 }
 if (packageManifest.engines?.node !== '>=22.18') {
@@ -538,7 +545,7 @@ for (const requiredPath of [
   'docs/SKILL-USAGE.md',
   'examples/generic/probe.config.yaml',
   'examples/playwright-bdd/probe.config.yaml',
-  'plugins/yieldwerx-probe/bin/probe.mjs',
+  'bin/probe.mjs',
   'plugins/yieldwerx-probe/lib/probe-config.mjs',
   'plugins/yieldwerx-probe/references/configuration.md',
   'plugins/yieldwerx-probe/references/integrations/knowledge.md',
