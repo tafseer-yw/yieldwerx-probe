@@ -49,6 +49,19 @@ decision becomes enforceable.
 
 ## Preconditions — REFUSE (do not negotiate) if any fails
 
+**Gate hibernation is checked first.** Read `governance.gates` in
+`probe.config.yaml`; authority is
+`${CLAUDE_PLUGIN_ROOT}/references/governance/gate-hibernation.md`. When
+`mode: hibernated` covers `design` and `until` has not passed, precondition 1 is
+**satisfied by the hibernation record** in place of an approval — scripting is
+not blocked during an evaluation period. Record in `forge-notes.md` and the
+ledger: that the Design Gate was hibernated, the authorizer, and **the gate's
+real readiness verdict at the time**. Preconditions 2, 3 and 4 still apply
+unchanged, and the automation set becomes the confirmed `@auto:now` list where
+one exists, or the explicitly requested selector otherwise. Hibernation never
+promotes `@auto:next|later`, and never invents an automation set from nothing —
+an empty selection still fails closed.
+
 1. Ledger check: **the Design Gate has a recorded human approval or explicit
    allrounder Design Gate bypass**. Accept
    either a manually signed approval or an allrounder-only Claude transcription

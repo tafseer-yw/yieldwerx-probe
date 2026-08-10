@@ -96,6 +96,129 @@ paths:
   const rejected = run(['validate-config', '--root', temporaryRoot, '--config', invalid]);
   if (rejected.status === 0) throw new Error('Invalid configuration was accepted.');
 
+  // --- Gate hibernation (P17) ----------------------------------------------
+  // These forms and safeguards are load-bearing: flow and block sequences plus
+  // flow and block authorizer mappings must be accepted; expiry must surface;
+  // and an anonymous hibernation must be rejected. Otherwise a valid governance
+  // decision either fails to load or silently behaves unlike its declaration.
+  const hibernationBase = `schemaVersion: 1
+probeVersion: ${expectedVersion}
+paths:
+  features: features
+  ledgers: docs/qa
+  artifacts: .probe/artifacts
+governance:
+  gates:
+`;
+  const hibernated = path.join(temporaryRoot, 'hibernated.yaml');
+  fs.writeFileSync(
+    hibernated,
+    `${hibernationBase}    mode: hibernated
+    scope: [design, merge, ops]
+    authorizedBy:
+      name: Test Owner
+      email: owner@example.com
+      role: PROBE Owner
+    reason: Evaluation period.
+    since: 2026-08-10
+    until: null
+`,
+  );
+  const accepted = run(['validate-config', '--root', temporaryRoot, '--config', hibernated]);
+  if (accepted.status !== 0) {
+    throw new Error(`Complete hibernation was rejected: ${accepted.stderr || accepted.stdout}`);
+  }
+
+  const blockScope = path.join(temporaryRoot, 'hibernated-block-scope.yaml');
+  fs.writeFileSync(
+    blockScope,
+    `${hibernationBase}    mode: hibernated
+    scope:
+      - design
+      - merge
+    authorizedBy:
+      name: Test Owner
+      email: owner@example.com
+      role: PROBE Owner
+    reason: Evaluation period.
+    since: 2026-08-10
+    until: null
+`,
+  );
+  const blockScopeResult = run([
+    'validate-config',
+    '--root',
+    temporaryRoot,
+    '--config',
+    blockScope,
+  ]);
+  if (blockScopeResult.status !== 0) {
+    throw new Error(
+      `Block-sequence hibernation was rejected: ${blockScopeResult.stderr || blockScopeResult.stdout}`,
+    );
+  }
+
+  const inlineAuthorizer = path.join(temporaryRoot, 'hibernated-inline-authorizer.yaml');
+  fs.writeFileSync(
+    inlineAuthorizer,
+    `${hibernationBase}    mode: hibernated
+    scope: [design, merge, ops]
+    authorizedBy: { name: Test Owner, email: owner@example.com, role: PROBE Owner }
+    reason: Evaluation period.
+    since: 2026-08-10
+    until: null
+`,
+  );
+  const inlineAuthorizerResult = run([
+    'validate-config',
+    '--root',
+    temporaryRoot,
+    '--config',
+    inlineAuthorizer,
+  ]);
+  if (inlineAuthorizerResult.status !== 0) {
+    throw new Error(
+      `Inline-authorizer hibernation was rejected: ${inlineAuthorizerResult.stderr || inlineAuthorizerResult.stdout}`,
+    );
+  }
+
+  const expired = path.join(temporaryRoot, 'hibernated-expired.yaml');
+  fs.writeFileSync(
+    expired,
+    `${hibernationBase}    mode: hibernated
+    scope: [design]
+    authorizedBy: { name: Test Owner, email: owner@example.com, role: PROBE Owner }
+    reason: Expiry test.
+    since: 1999-01-01
+    until: 2000-01-01
+`,
+  );
+  const expiredResult = run(['validate-config', '--root', temporaryRoot, '--config', expired]);
+  if (expiredResult.status !== 0 || !expiredResult.stdout.includes('expired on 2000-01-01')) {
+    throw new Error(
+      `Expired hibernation was not surfaced: ${expiredResult.stderr || expiredResult.stdout}`,
+    );
+  }
+
+  const anonymous = path.join(temporaryRoot, 'anonymous.yaml');
+  fs.writeFileSync(anonymous, `${hibernationBase}    mode: hibernated\n`);
+  const anonymousResult = run([
+    'validate-config',
+    '--root',
+    temporaryRoot,
+    '--config',
+    anonymous,
+    '--json',
+  ]);
+  if (anonymousResult.status === 0) {
+    throw new Error('Hibernation with no named authorizer was accepted.');
+  }
+  for (const required of ['authorizedBy.name', 'reason', 'since', 'scope']) {
+    if (!anonymousResult.stdout.includes(required)) {
+      throw new Error(`Anonymous hibernation did not report the missing '${required}'.`);
+    }
+  }
+
   fs.mkdirSync(path.join(temporaryRoot, 'docs', 'PRDs'), { recursive: true });
   fs.mkdirSync(path.join(temporaryRoot, 'features', 'sample'), { recursive: true });
   fs.writeFileSync(

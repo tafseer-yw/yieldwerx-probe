@@ -58,6 +58,40 @@ approval statement, it fills the report and ledger on the human's behalf and
 records the required waiver. Claude must never invent an approval, approve its
 own report, or use this shortcut for a non-allrounder.
 
+## Gate hibernation (evaluation mode)
+
+**Check `governance.gates` in `probe.config.yaml` before anything else.**
+Authority: `${CLAUDE_PLUGIN_ROOT}/references/governance/gate-hibernation.md`.
+
+When `mode: hibernated` and `design` is in `scope`, and `until` is either absent,
+`null`, or a date that has not passed:
+
+1. **Assemble the evidence exactly as normal.** Recompute coverage, lint,
+   traceability and unresolved decisions. Hibernation changes nothing about what
+   is gathered or how honestly it is reported.
+2. **Report the real readiness verdict.** `READY FOR APPROVAL` or `NOT READY`
+   with every failing checklist item intact. Never soften a finding because it
+   will not block.
+3. **Set the decision line to `HIBERNATED — evidence assembled, not signed`**,
+   followed by the readiness verdict from step 2. Never `approved`, `passed`, or
+   `signed` — rendering a hibernated gate as approval is falsified evidence and
+   is `blocker` under the ladder.
+4. **Add the hibernation header** to the report: mode, `authorizedBy` name,
+   email and role, `reason`, `since`, and `until` or `reviewOn`.
+5. **Record the ledger row** — stage, date, `Decision: hibernated`, the
+   authorizer, and the real readiness verdict. These rows are the gate-debt list
+   that resumption works through; a stage that proceeds silently defeats the
+   whole mechanism.
+6. **Do not request or wait for a signature**, and do not leave empty signature
+   fields implying one is owed.
+
+An expired `until` means gates are **active**. Report the expiry and follow the
+normal signing path; never honour a lapsed hibernation.
+
+Hibernation does not waive Case Audit. An unrun or failing audit is still
+reported as such, and `/bypass-gate` or `/owner-bypass` remain the only routes
+to waive it.
+
 ## Allrounder Case Audit bypass
 
 A named QA Lead or Automation Engineer allrounder may explicitly waive Case

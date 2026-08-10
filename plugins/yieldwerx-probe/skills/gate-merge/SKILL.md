@@ -51,6 +51,34 @@ can sign the merge. Claude never invents a signature and never merges the
 branch. It may transcribe a named allrounder's explicit Merge Gate bypass into
 the report and ledger.
 
+## Gate hibernation (evaluation mode)
+
+**Check `governance.gates` in `probe.config.yaml` before anything else.**
+Authority: `${CLAUDE_PLUGIN_ROOT}/references/governance/gate-hibernation.md`.
+
+When `mode: hibernated` and `merge` is in `scope`, and `until` is absent, `null`,
+or a date that has not passed:
+
+1. Assemble every piece of evidence as normal — Script Forge output, Script
+   Audit verdict, Stability Run results, **and the hard testId-coverage check.**
+   Hibernation suspends blocking, never gathering.
+2. Report the real readiness verdict with every failing item intact.
+3. Set the decision line to `HIBERNATED — evidence assembled, not signed`,
+   followed by that verdict. Never `approved`, `passed`, or `signed`.
+4. Add the hibernation header: mode, authorizer name, email and role, reason,
+   `since`, and `until` or `reviewOn`.
+5. Record the ledger row with `Decision: hibernated`, the authorizer, and the
+   real readiness verdict — this is the gate-debt entry resumption works through.
+6. Do not request a signature and do not leave signature fields implying one is
+   owed.
+
+An expired `until` means gates are active; report the expiry and follow the
+normal signing path.
+
+**This still does not merge.** Hibernation suspends the Merge Gate's block on
+the PROBE stage that follows it. The repository's own branch protection and
+merge authorization are untouched and are not PROBE's to waive.
+
 ## Allrounder Merge Gate bypass
 
 A named QA Lead or Automation Engineer may say `bypass Merge Gate` even when

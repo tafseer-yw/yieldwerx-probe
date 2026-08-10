@@ -1,0 +1,40 @@
+schemaVersion: 1
+probeVersion: 2.11.0
+profile: node-ts-spa
+
+paths:
+  requirements: docs/requirements
+  features: features
+  ledgers: docs/qa
+  artifacts: .probe/artifacts
+  testData: test-data
+
+commands:
+  install: npm ci
+  appStart: npm run dev
+  appSeed: npm run seed
+  appReset: npm run reset
+  build: npm run build
+  typecheck: npm run typecheck
+  lintCode: npm run lint
+  unitTests: npm test
+
+integrations:
+  api:
+    documentUrl: http://127.0.0.1:3000/openapi.json
+  caseManagement:
+    provider: none
+    required: false
+  browser:
+    provider: none
+  knowledge:
+    provider: none
+    required: false
+
+policies:
+  testIdRequired: true
+  wrongBusinessDataSeverity: blocker
+
+governance:
+  gates:
+    mode: active

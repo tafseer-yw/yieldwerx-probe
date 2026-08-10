@@ -51,6 +51,36 @@ Claude never invents a signature. It may transcribe a named allrounder's
 explicit Ops Gate bypass and mark
 `Done — Ops Gate bypassed` with the residual risk still visible.
 
+## Gate hibernation (evaluation mode)
+
+**Check `governance.gates` in `probe.config.yaml` before anything else.**
+Authority: `${CLAUDE_PLUGIN_ROOT}/references/governance/gate-hibernation.md`.
+
+When `mode: hibernated` and `ops` is in `scope`, and `until` is absent, `null`,
+or a date that has not passed:
+
+1. Assemble every piece of evidence as normal — the CI green run count, the
+   flake rate, AIO synchronization, durable evidence, **and the exact manual-only
+   scenario count.** Hibernation suspends blocking, never gathering.
+2. Report the real readiness verdict with every failing item intact.
+3. Set the decision line to `HIBERNATED — evidence assembled, not signed` and
+   the automation outcome to **`Done — Ops Gate hibernated`**, never plain
+   `Done`, so no feature is ever recorded as having completed a gate it did not.
+4. Add the hibernation header: mode, authorizer name, email and role, reason,
+   `since`, and `until` or `reviewOn`.
+5. Record the ledger row with `Decision: hibernated`, the authorizer, and the
+   real readiness verdict — including the manual-only count, which is the
+   obligation most likely to be outstanding when gates resume.
+6. Do not request a signature and do not leave signature fields implying one is
+   owed.
+
+An expired `until` means gates are active; report the expiry and follow the
+normal signing path.
+
+Every expiry and backfill obligation on a manual-only waiver survives
+hibernation unchanged. Hibernation suspends the gate, not the debt it was
+measuring.
+
 ## Allrounder Ops Gate bypass
 
 A named QA Lead or Automation Engineer may say `bypass Ops Gate` even when the

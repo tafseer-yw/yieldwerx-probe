@@ -89,7 +89,7 @@ function installedPlugins() {
   }
   try {
     const parsed = JSON.parse(result.stdout);
-    return { available: true, plugins: Array.isArray(parsed) ? parsed : parsed.plugins ?? [] };
+    return { available: true, plugins: Array.isArray(parsed) ? parsed : (parsed.plugins ?? []) };
   } catch {
     return { available: true, error: 'Claude plugin list did not return JSON.', plugins: [] };
   }
@@ -123,7 +123,12 @@ function inspectConsumer(options, includeRuntimePlugins, includeConsumerChecks) 
   } catch (error) {
     return { config: null, errors: [error.message], warnings, checks: {} };
   }
-  const validated = validateProbeConfig(config, { expectedVersion: cliVersion });
+  const now = new Date();
+  const today =
+    `${now.getFullYear()}-` +
+    `${String(now.getMonth() + 1).padStart(2, '0')}-` +
+    String(now.getDate()).padStart(2, '0');
+  const validated = validateProbeConfig(config, { expectedVersion: cliVersion, today });
   errors.push(...validated.errors);
   warnings.push(...validated.warnings);
 
@@ -163,7 +168,9 @@ function inspectConsumer(options, includeRuntimePlugins, includeConsumerChecks) 
   if (includeRuntimePlugins) {
     const runtime = installedPlugins();
     if (!runtime.available) {
-      warnings.push(`Claude CLI is unavailable; installed-plugin check skipped (${runtime.error}).`);
+      warnings.push(
+        `Claude CLI is unavailable; installed-plugin check skipped (${runtime.error}).`,
+      );
     } else if (runtime.error) {
       warnings.push(`Could not inspect installed Claude plugins: ${runtime.error}`);
     } else {

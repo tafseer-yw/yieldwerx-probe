@@ -64,16 +64,16 @@ Every independent case still starts from a verified known state and executes
 all of its own Gherkin steps. The executor creates assisted/manual evidence;
 Playwright Test remains the automation and CI runner.
 
-## All 27 public skills: arguments and composition
+## All 34 public skills: arguments and composition
 
 The complete argument semantics, selector behavior, shared-session ownership,
 tandem recipes, artifact chains, and unsafe combinations are in the
 [skill usage and tandem guide](docs/SKILL-USAGE.md).
 
-The table below lists every public `yw:*` skill shipped by PROBE 2.9.3. The
-repository validator compares this README with the actual skill directories and
-fails when a skill, accepted argument contract, or full 5W1H catalog entry is
-missing.
+The table below lists every public `yw:*` skill shipped by PROBE 2.10.0 — 27 on
+the QA track and 7 on the development track. The repository validator compares
+this README with the actual skill directories and fails when a skill, accepted
+argument contract, or full 5W1H catalog entry is missing.
 
 | Skill                            | Accepted arguments                                                                                                                                  |
 | -------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------- |
@@ -105,6 +105,24 @@ missing.
 | `/yw:flake-triage`               | `<feature-slug-or-scenario> [evidence-path]`                                                                                                        |
 | `/yw:change-impact`              | `[base-ref]`                                                                                                                                        |
 
+The development track builds and corrects the application the QA track tests.
+**It is gate-independent:** no development skill checks a ledger, waits on the
+Design, Merge, or Ops Gate, or requires a QA artifact to exist, so every one of
+them runs on a repository that has never used PROBE's QA process. Where a QA
+artifact is present it is consumed as better input, never as a precondition.
+Neither track edits the other's artifacts. Authority:
+[DEV-TRACK.md](plugins/yieldwerx-probe/references/process/DEV-TRACK.md).
+
+| Skill                  | Accepted arguments                                                                                                                          |
+| ---------------------- | ------------------------------------------------------------------------------------------------------------------------------------------- |
+| `/yw:scaffold-app`     | `<app-slug> [--stack <profile-name>] [--surfaces api,ui,db,auth,queue] [--dry-run]`                                                         |
+| `/yw:build-feature`    | `<feature-slug> [--ac AC-NN] [--category CAT-NN] [--requirement <path>] [--no-requirement "<reason>"]`                                      |
+| `/yw:revise-feature`   | `<feature-slug> -- <what must change> [--breaking-ok "<authorization>"] [--ac AC-NN]`                                                       |
+| `/yw:fix-defect`       | `<feature-slug> "<defect-slug-or-symptom>" [--candidate <path>] [--tc TC-id] [--no-test "<reason>"]`                                        |
+| `/yw:seed-testability` | `<feature-slug> [--from-recon <path>] [--surface ui\|api\|results\|all] [--rank high\|medium\|all]`                                         |
+| `/yw:review-code`      | `<feature-slug> [branch\|--staged\|--files <path,...>] [--focus correctness\|security\|data\|observability\|all] [--depth quick\|thorough]` |
+| `/yw:ship-change`      | `<feature-slug> [commit\|describe\|both] [--push] [--open-pr] [--base <ref>]`                                                               |
+
 For the most complete single-browser workflow:
 
 ```text
@@ -117,6 +135,32 @@ For the most complete single-browser workflow:
 UI Recon is the only browser driver in that composition. API Recon observes
 network behavior, while Execute Cases records exact step verdicts and failure
 evidence from the same actions. Each skill writes and owns its own artifacts.
+
+## Gate hibernation (evaluation mode)
+
+A consumer repository may suspend the Design, Merge and Ops Gates by declaring
+`governance.gates` in `probe.config.yaml`. This exists so a team can run PROBE
+end to end before agreeing to be bound by it.
+
+**Hibernation suspends blocking and nothing else.** The gate still runs, still
+assembles evidence, and still reports `READY` or `NOT READY` with every failing
+item intact; its decision line reads
+`HIBERNATED — evidence assembled, not signed`. It is never `approved`,
+`passed`, or `signed` — rendering it as one is falsified evidence and is
+`blocker` under the severity ladder.
+
+Not suspended: the severity ladder (a `blocker` still halts, and wrong business
+data is still `blocker`), Case Audit and Script Audit verdicts, the traceability
+chain, external-write authorization, and the repository's own branch protection.
+
+`mode: hibernated` requires a named `authorizedBy`, a `reason`, a `scope`, and a
+`since` date. Every stage that proceeds writes a ledger row carrying the
+authorizer and the gate's real readiness verdict; when gates resume, those rows
+are the gate-debt list. Resume with `mode: active`, or delete the block.
+
+Full contract:
+[gate-hibernation.md](plugins/yieldwerx-probe/references/governance/gate-hibernation.md)
+· policy P17.
 
 ## Skill catalog: Why, What, When, Where, and How
 
@@ -467,12 +511,112 @@ Substantive case changes are routed to `/yw:update-cases`.
 - **How:** Run configured impact checks, inspect hunks, map affected tests, and
   propose rather than silently apply case/script changes.
 
+### `scaffold-app`
+
+- **Why:** Every expensive early QA finding is a missing foundation — no API
+  document to reconcile, no roles so authorization has no coverage, no reset so
+  scenarios contaminate each other, no selector policy so the first hundred
+  controls ship unaddressable.
+- **What:** A runnable skeleton with no business features and every QA contract
+  already present, proven by one trivial vertical slice.
+- **When:** Once, at the start of an application under test. Never over code
+  that already exists.
+- **Where:** A new consumer repository; the report goes to the configured
+  `70-build` artifact directory.
+- **How:** Confirm stack and surfaces, lay down datastore, roles, documented API,
+  selector policy and async surface in dependency order, prove the slice, and
+  hand over the exact commands and `probe.config.yaml` entries PROBE will need.
+
+### `build-feature`
+
+- **Why:** PROBE governed how a feature is tested but never how it is built, so
+  the tracks drifted — unaddressable controls and undocumented routes discovered
+  a quarter later by recon.
+- **What:** One verified capability on its own branch, with a report naming the
+  acceptance criteria satisfied, the files changed, and the observability added.
+- **When:** For new capability, after the requirement exists. Use
+  `/yw:revise-feature` to change behavior and `/yw:fix-defect` for defects.
+- **Where:** Application code on `feat/<feature-slug>`; never in `docs/qa/`.
+- **How:** Clarify without assuming, design onto the repository's real layers,
+  split into bounded tasks, implement whole journeys with their observability
+  obligations, and loop on verbatim failures until green.
+
+### `revise-feature`
+
+- **Why:** Changing working behavior is more dangerous than adding new behavior,
+  because a caller, a stored row, and an approved case already depend on it.
+- **What:** A behavior change with its current state documented first,
+  compatibility preserved unless a break is authorized, and an explicit list of
+  the QA artifacts it invalidates.
+- **When:** When behavior that exists must work differently — a renamed label, a
+  changed default, a different calculation.
+- **Where:** Application code on `feat/<feature-slug>`; the invalidation list
+  goes in the revision report.
+- **How:** Inventory current behavior and its dependents before editing, design
+  the transition rather than only the end state, migrate stored data, verify,
+  and route every invalidated artifact rather than amending it.
+
+### `fix-defect`
+
+- **Why:** PROBE files defects and the trail stops; the fix happens under no
+  process and no evidence returns.
+- **What:** The smallest correct change for one defect, a regression test that
+  demonstrably failed before it, and a report the QA track can close against.
+- **When:** When a defect is reproducible. Intermittent behavior goes to
+  `/yw:flake-triage` first.
+- **Where:** Application code on `fix/<defect-slug>`; the test lands at the
+  cheapest level that pins the defect.
+- **How:** Read the evidence not the title, reproduce, write the failing test
+  first and record its failure, state the mechanism with citations, make the
+  minimal change, check sibling paths, and verify.
+
+### `seed-testability`
+
+- **Why:** Recon regularly finds a build with no automation contracts at all —
+  each gap cheap to fix in the code and expensive to work around in the tests.
+- **What:** Stable selector contracts, an API document that matches the
+  implementation, and machine-readable access to asserted values.
+- **When:** As a sweep over code predating the obligation, to measure how
+  automatable a build currently is, or from a recon gap list. A recon pass is
+  optional — the scout scans the code directly.
+- **Where:** Application code; never a page object, feature file, or recon
+  artifact.
+- **How:** Take the scout's code scan as the base list, union any recon list
+  over it, close gaps by rank without changing behavior, verify the suite is
+  unchanged, and map every closure back to the finding that raised it.
+
+### `review-code`
+
+- **Why:** PROBE reviews automation adversarially and application code not at
+  all — yet that is where a wrong calculation costs a customer a wrong number.
+- **What:** An independent review with a `GO`/`NO-GO` verdict, ranked findings
+  each carrying a concrete failure case, and the unmet obligations.
+- **When:** Before `/yw:ship-change`, on any dev-track branch. Automation goes to
+  `/yw:audit-scripts` instead.
+- **Where:** Reads the consumer repository; writes only the review artifact.
+- **How:** Freeze the change set, read the intent before the diff, delegate to
+  the code reviewer, verify every finding is concrete before reporting it, rank
+  on the configured ladder, and decide.
+
+### `ship-change`
+
+- **Why:** The last mile is where a good change becomes unreviewable — a commit
+  that says "fixes", no evidence, and no mention that forty cases are now stale.
+- **What:** The requested shipping output: clean local commits, a pull-request
+  body carrying the intent and evidence, or both.
+- **When:** After `/yw:review-code` returns `GO`.
+- **Where:** The consumer working tree and its configured remote; ship notes go
+  to `70-build`.
+- **How:** Resolve `commit`, `describe`, or `both` plus the comparison base;
+  scan for what must never be committed, run the hygiene set, create only the
+  requested local outputs, and stop at the boundary of any outward action.
+
 ## Install in Claude Code
 
-Add the private Azure Repos marketplace using the clone URL shown by Azure:
+Add the public GitHub marketplace:
 
 ```text
-/plugin marketplace add https://dev.azure.com/<organization>/<project>/_git/yieldwerx-probe
+/plugin marketplace add https://github.com/tafseer-yw/yieldwerx-probe.git
 /plugin install yw@yieldwerx
 /reload-plugins
 ```
@@ -488,7 +632,7 @@ Installed commands are namespaced, for example:
 /yw:update-yieldwerx-knowledge
 ```
 
-All 27 `yw:*` skills are explicitly user-invocable and appear in Claude Code's
+All 34 `yw:*` skills are explicitly user-invocable and appear in Claude Code's
 slash-command menu. Repository validation fails if a public skill is hidden.
 
 ## Consumer contract
@@ -496,6 +640,8 @@ slash-command menu. Repository validation fails if a public skill is hidden.
 Each consumer supplies `probe.config.yaml`. See
 [`examples/generic/probe.config.yaml`](examples/generic/probe.config.yaml) and
 [`examples/playwright-bdd/probe.config.yaml`](examples/playwright-bdd/probe.config.yaml).
+Applications using the development track can start from
+[`examples/node-ts-spa/probe.config.yaml`](examples/node-ts-spa/probe.config.yaml).
 Plugin-owned references stay inside the plugin; feature artifacts are always
 written into the consumer repository.
 

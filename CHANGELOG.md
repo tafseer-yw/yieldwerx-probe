@@ -2,6 +2,173 @@
 
 All notable changes to YieldWerx PROBE are recorded here.
 
+## 2.11.0 — 2026-08-10
+
+**Gates can be hibernated for an evaluation period — without pretending they
+passed.** A team adopting PROBE needs to run it end to end before agreeing to be
+bound by it. During that trial a gate that blocks delivery is not governance, it
+is an adoption barrier, and the usual outcome is that the team abandons the
+process rather than the shipping. Deleting the gate checks is the wrong fix,
+because then nothing records what shipped un-gated and the evaluation produces no
+evidence about whether the gates were worth having.
+
+Declared per repository in `probe.config.yaml`:
+
+```yaml
+governance:
+  gates:
+    mode: hibernated
+    scope: [design, merge, ops]
+    authorizedBy: { name: ..., email: ..., role: ... }
+    reason: ...
+    since: 2026-08-10
+    until: null # or a date; an expired hibernation is not honoured
+```
+
+### What it does
+
+The gate still runs, still assembles evidence, and still reports `READY` or
+`NOT READY` with every failing checklist item intact. Its decision line reads
+`HIBERNATED — evidence assembled, not signed`. **One thing changes: whether that
+verdict stops work.** `/forge-scripts` and `/testops-promote` accept the
+hibernation record in place of the approval they normally demand, and record the
+gate's real readiness verdict when they do.
+
+### What it does not do
+
+Five things stay live, and a skill that suspends any of them has misread the
+policy:
+
+- **the severity ladder** — a `blocker` still halts, and wrong business data is
+  still `blocker`. Suspending this would make the evaluation worthless, because
+  the team would never see PROBE catch anything;
+- **Case Audit and Script Audit verdicts** — hibernation is not an audit waiver;
+  `/bypass-gate` and `/owner-bypass` remain the only routes, still per-scope;
+- **the traceability chain**;
+- **external-write authorization** — a live AIO sync, a Jira filing, and a push
+  each still need explicit approval;
+- **the repository's own branch protection and merge controls**, which PROBE
+  does not own and never waives.
+
+**No gate is ever reported as approved.** A hibernated gate is `HIBERNATED`,
+never `APPROVED`, `PASSED`, or `SIGNED`; the Ops Gate outcome becomes
+`Done — Ops Gate hibernated`, never plain `Done`. Rendering hibernation as
+approval is falsified evidence and is `blocker` under the ladder.
+
+### The debt list
+
+Every stage that proceeds under hibernation writes a ledger row carrying the
+authorizer and the gate's real readiness verdict. When gates resume, **those
+rows are the gate-debt list** — each is then signed, explicitly bypassed, or
+remediated. A gate that said `NOT READY` under hibernation does not become
+`READY` because time passed.
+
+### Also
+
+- New policy **P17 — Gates may be hibernated, never faked** in PROBE-PROCESS,
+  with the full contract in `references/governance/gate-hibernation.md`.
+- `config/probe-config.schema.json` gains the `governance.gates` block.
+  `mode: hibernated` **requires** `scope`, `authorizedBy`, `reason` and `since`;
+  a hibernation with no named human is not a governance decision and is rejected.
+- The ledger template gains a hibernation table, with signature fields left
+  empty and unmarked so no signature is implied.
+- Repository validation asserts the properties that keep hibernation from
+  decaying into a silent waiver, and forbids rendering a hibernated gate as
+  approval.
+- **The config parser now supports flow sequences, flow mappings, and scalar
+  block sequences** (`scope: [a, b]`, `authorizedBy: { name: ... }`, and a
+  conventional multi-line `scope:` list). `governance.gates.scope` is the first
+  array-valued key in the schema, and the minimal YAML parser previously read a
+  flow sequence as a string and rejected a block sequence outright. Caught by
+  `probe doctor` against a real consumer config, and now covered by `test-cli`
+  for all three accepted forms, expired hibernation, and anonymous rejection.
+
+## 2.10.0 — 2026-08-10
+
+**PROBE gains a development track.** Until now PROBE governed how a feature is
+tested and said nothing about how it is built, so the two drifted apart at
+exactly the seam where the expensive findings live: a control ships with no
+stable identifier and UI Recon discovers it a quarter later; a service accepts
+an enum its own API document does not declare and API Recon finds the
+contradiction after a hundred cases were written against the document; a defect
+is filed, fixed somewhere else, and no evidence ever returns.
+
+Seven new `yw:*` skills, four new agents, one process authority, one stack
+profile. The QA track is unchanged — no existing skill, agent, gate, policy or
+artifact path was modified.
+
+**The development track is gate-independent (policy D8).** No development skill
+checks a ledger, waits on the Design, Merge, or Ops Gate, or requires a QA
+artifact to exist. Every one of them runs on a repository that has never used
+PROBE's QA process; where a QA artifact is present it is consumed as better
+input, never as a precondition. This is deliberate — PROBE's QA process is a
+QA-team-owned gating discipline, and coupling a developer's ability to build to
+a signature that team owns would make the track unusable. Repository validation
+enforces it from both directions: each skill must state its independence, and
+none may contain the QA track's gate-refusal phrasings.
+
+### New skills (development track)
+
+- **`/yw:scaffold-app`** — stand up an application whose QA contracts exist from
+  the first commit: a served API document, enforced roles, a queryable
+  datastore, deterministic seed and reset, and a declared selector policy,
+  proven by one trivial vertical slice. Refuses over existing application code.
+- **`/yw:build-feature`** — approved requirement to verified capability.
+  Clarify without assuming, design onto the repository's real layers, split into
+  bounded tasks with non-overlapping files, implement whole journeys, and loop
+  on verbatim failures until green.
+- **`/yw:revise-feature`** — change existing behaviour with its current state
+  inventoried first, compatibility preserved unless a break is authorized, and
+  stored data migrated. Emits the downstream-invalidation list.
+- **`/yw:fix-defect`** — closes the loop from `/yw:bug-report`. The failing test
+  comes first and its failure is recorded verbatim; the mechanism is stated with
+  citations before any edit; the candidate is never closed from here.
+- **`/yw:seed-testability`** — turns a UI Recon or API Recon gap list into
+  shipped selector and API-document contracts. Changes observability, never
+  behaviour.
+- **`/yw:review-code`** — independent adversarial review of _application_ code
+  with a `GO`/`NO-GO` verdict, closing the asymmetry where `/yw:audit-scripts`
+  reviewed test code and nothing reviewed the code it tests.
+- **`/yw:ship-change`** — hygiene, commits that say why, and a pull-request body
+  carrying the verification evidence, the review verdict, and the list of QA
+  artifacts the change makes stale.
+
+### New agents
+
+- **`requirement-clarifier`** — refuses to invent. Every dimension is labelled
+  `stated`, `verified-in-code`, `proposed`, or `OPEN QUESTION`, with citations.
+- **`build-verifier`** — runs the configured verification set and returns
+  failures verbatim. Reports a change with an unmet observability obligation as
+  `red` even when every command passed.
+- **`code-reviewer`** — adversarial application-code review across correctness,
+  data integrity, security, error handling, observability and determinism.
+  Routes automation to `script-auditor`.
+- **`testability-scout`** — read-only inventory of what the QA track will not be
+  able to see: missing identifiers, value-named handles, API-document drift,
+  unreadable results, non-determinism.
+
+### New authority and profile
+
+- **`references/process/DEV-TRACK.md`** — the development track's process
+  authority and its nine standing policies (D1–D9). Names the four optional
+  seams where the tracks may meet, states that neither edits the other's
+  artifacts, and fixes gate-independence as policy D8.
+- **`references/profiles/node-ts-spa/`** — a stack profile for a Node/TypeScript
+  service with a documented API and a single-page frontend: a selector policy
+  with a gap-ranking rubric, service conventions covering API-document parity,
+  authorization, determinism and readable results, and the traps recorded from
+  live YieldWerx recon passes.
+
+### Composition edges are now declared and validated
+
+Every development-track skill and agent declares its edges in a `graph:`
+frontmatter block — `consumes`, `produces`, `next`, `delegates`, `used_by`.
+Repository validation rejects an unknown relation, an unknown node-kind prefix,
+and any `skill:` or `agent:` edge pointing at something this repository does not
+ship, so a rename cannot leave a dangling reference behind. The QA track's
+composition remains documented in PROBE-PROCESS and PROBE-QUICKREF; backfilling
+its frontmatter is a deliberate follow-up.
+
 ## 2.9.3 — 2026-08-10
 
 - Added the human-readable plugin name **yieldWerx PROBE** for Claude Desktop

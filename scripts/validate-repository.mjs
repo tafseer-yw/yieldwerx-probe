@@ -32,6 +32,14 @@ const expectedSkills = [
   'ui-recon',
   'update-yieldwerx-knowledge',
   'update-cases',
+  // --- Development track (2.10.0) ------------------------------------------
+  'build-feature',
+  'fix-defect',
+  'review-code',
+  'revise-feature',
+  'scaffold-app',
+  'seed-testability',
+  'ship-change',
 ];
 const expectedAgents = [
   'e2e-scripter.md',
@@ -44,6 +52,42 @@ const expectedAgents = [
   'test-case-designer.md',
   'testops-engineer.md',
   'ui-recon-agent.md',
+  // --- Development track (2.10.0) ------------------------------------------
+  'build-verifier.md',
+  'code-reviewer.md',
+  'requirement-clarifier.md',
+  'testability-scout.md',
+];
+/**
+ * Skills and agents on the development track. They carry the extra frontmatter
+ * the QA track does not (yet) declare — `track: dev` plus a `graph:` block whose
+ * edges are validated below, so a rename cannot leave a dangling reference.
+ */
+const devSkills = [
+  'build-feature',
+  'fix-defect',
+  'review-code',
+  'revise-feature',
+  'scaffold-app',
+  'seed-testability',
+  'ship-change',
+];
+const devAgents = [
+  'build-verifier.md',
+  'code-reviewer.md',
+  'requirement-clarifier.md',
+  'testability-scout.md',
+];
+const graphNodePrefixes = [
+  'skill',
+  'agent',
+  'artifact',
+  'doc',
+  'code',
+  'contract',
+  'profile',
+  'input',
+  'repo',
 ];
 
 const errors = [];
@@ -122,6 +166,96 @@ function checkFrontmatter(absolutePath, expectedName) {
         errors.push(`${relativePath}: missing required '## ${heading}' section`);
       }
     }
+  }
+}
+
+/**
+ * Validate the development track's extra frontmatter contract.
+ *
+ * Dev skills and agents declare their composition as typed edges so the track
+ * is navigable without reading every file. The edges are only worth declaring
+ * if they cannot rot, so this asserts: the `track: dev` marker, a well-formed
+ * `graph:` block using known relations, node ids carrying a known kind prefix,
+ * and — the part that actually catches mistakes — that every `skill:` and
+ * `agent:` node names something this repository ships. A rename that leaves a
+ * dangling edge fails here rather than in a session six weeks later.
+ */
+const graphRelations = new Set([
+  'consumes',
+  'produces',
+  'next',
+  'chains',
+  'delegates',
+  'used_by',
+  'reads',
+  'scope',
+]);
+
+function checkDevTrackFrontmatter(absolutePath, knownSkills, knownAgents) {
+  const relativePath = path.relative(root, absolutePath).replaceAll('\\', '/');
+  const content = fs.readFileSync(absolutePath, 'utf8');
+  const frontmatter = content.match(/^---\r?\n([\s\S]*?)\r?\n---\r?\n/)?.[1];
+  if (!frontmatter) return; // already reported by checkFrontmatter
+
+  if (!/^track:\s*dev$/m.test(frontmatter)) {
+    errors.push(`${relativePath}: development-track file must declare 'track: dev'`);
+  }
+  if (!/^safety:\s*(read-only|writes-local|writes-code)$/m.test(frontmatter)) {
+    errors.push(`${relativePath}: must declare a known 'safety:' level`);
+  }
+
+  const graphStart = frontmatter.match(/^graph:\s*$/m);
+  if (!graphStart) {
+    errors.push(`${relativePath}: development-track file must declare a 'graph:' block`);
+    return;
+  }
+  const lines = frontmatter.slice(graphStart.index).split(/\r?\n/).slice(1);
+  let declaredEdges = 0;
+  for (let lineIndex = 0; lineIndex < lines.length; lineIndex += 1) {
+    const line = lines[lineIndex];
+    if (!line.startsWith('  ') || line.trim() === '') break;
+    let entry = line.match(/^ {2}(\w+):\s*\[(.*)]\s*$/);
+    const wrappedRelation = line.match(/^ {2}(\w+):\s*$/);
+    if (!entry && wrappedRelation) {
+      const wrappedLines = [];
+      while (lineIndex + 1 < lines.length && lines[lineIndex + 1].startsWith('    ')) {
+        lineIndex += 1;
+        wrappedLines.push(lines[lineIndex].trim());
+        if (lines[lineIndex].trimEnd().endsWith(']')) break;
+      }
+      const wrappedArray = wrappedLines.join(' ').match(/^\[(.*)]$/);
+      if (wrappedArray) entry = [line, wrappedRelation[1], wrappedArray[1]];
+    }
+    if (!entry) {
+      errors.push(`${relativePath}: malformed graph entry '${line.trim()}'`);
+      continue;
+    }
+    const [, relation, rawNodes] = entry;
+    if (!graphRelations.has(relation)) {
+      errors.push(`${relativePath}: unknown graph relation '${relation}'`);
+      continue;
+    }
+    for (const node of rawNodes
+      .split(',')
+      .map((value) => value.trim())
+      .filter(Boolean)) {
+      declaredEdges += 1;
+      const kind = node.split(':')[0];
+      const target = node.slice(kind.length + 1).replace(/\?$/, '');
+      if (!graphNodePrefixes.includes(kind)) {
+        errors.push(`${relativePath}: graph node '${node}' has an unknown kind prefix`);
+        continue;
+      }
+      if (kind === 'skill' && target !== '*' && !knownSkills.includes(target)) {
+        errors.push(`${relativePath}: graph edge points at unknown skill '${target}'`);
+      }
+      if (kind === 'agent' && target !== '*' && !knownAgents.includes(target)) {
+        errors.push(`${relativePath}: graph edge points at unknown agent '${target}'`);
+      }
+    }
+  }
+  if (declaredEdges === 0) {
+    errors.push(`${relativePath}: 'graph:' block declares no edges`);
   }
 }
 
@@ -207,12 +341,20 @@ if (actualSkills.join('|') !== [...expectedSkills].sort().join('|')) {
     `skill inventory mismatch; expected ${expectedSkills.length}, found ${actualSkills.length}`,
   );
 }
+const knownAgentNames = fs
+  .readdirSync(path.join(pluginRoot, 'agents'))
+  .filter((entry) => entry.endsWith('.md'))
+  .map((entry) => entry.replace(/\.md$/, ''));
+
 for (const skill of actualSkills) {
   const skillFile = path.join(skillsRoot, skill, 'SKILL.md');
   if (!fs.existsSync(skillFile)) {
     errors.push(`skills/${skill}: missing SKILL.md`);
   } else {
     checkFrontmatter(skillFile, skill);
+    if (devSkills.includes(skill)) {
+      checkDevTrackFrontmatter(skillFile, actualSkills, knownAgentNames);
+    }
   }
 }
 
@@ -489,9 +631,153 @@ requireContent(
   ],
 );
 
+// --- Development track contracts -------------------------------------------
+// Each marker is a separation the two tracks depend on. Losing one silently is
+// how a dev skill starts amending feature files, or a build ships an endpoint
+// its own API document has never heard of.
+requireContent('plugins/yieldwerx-probe/references/process/DEV-TRACK.md', [
+  '### D1 — The requirement owns behaviour; code never becomes the requirement',
+  '### D2 — Testability is a build obligation, not a QA request',
+  '### D3 — A defect fix starts with a failing test',
+  '### D6 — Neither track edits the other',
+  '### D8 — The development track never waits on a gate',
+  'downstream-invalidation list',
+  'A code review is not a PROBE gate',
+  'The development track is gate-independent',
+  'the dev track never waits for the QA track to decide anything',
+]);
+// The dev track must stay runnable on a repository that has never used PROBE's
+// QA process. Two guards, because the failure mode is a slow drift rather than
+// one bad edit: assert that gate-independence is stated where a reader will see
+// it, and forbid the phrasings that would quietly reintroduce a dependency.
+requireContent('plugins/yieldwerx-probe/skills/build-feature/SKILL.md', [
+  'There is no fourth precondition',
+  'This skill checks no gate, no ledger, and no approval',
+  'Never read a gate for permission',
+]);
+requireContent('plugins/yieldwerx-probe/skills/seed-testability/SKILL.md', [
+  'A recon pass is not a prerequisite',
+]);
+requireContent('plugins/yieldwerx-probe/skills/revise-feature/SKILL.md', [
+  'Never read a gate for permission',
+]);
+requireContent('plugins/yieldwerx-probe/skills/ship-change/SKILL.md', ['No gate is consulted']);
+requireContent('plugins/yieldwerx-probe/skills/fix-defect/SKILL.md', [
+  'none of them is a prerequisite',
+]);
+requireContent('plugins/yieldwerx-probe/skills/review-code/SKILL.md', [
+  'It consults no gate and no ledger',
+]);
+for (const devSkill of devSkills) {
+  forbidContent(`plugins/yieldwerx-probe/skills/${devSkill}/SKILL.md`, [
+    [
+      'Design Gate has a recorded human approval',
+      'the dev track must never gate building on a QA signature (D8)',
+    ],
+    [
+      'REFUSE (do not negotiate)',
+      'that refusal contract belongs to the QA track; dev preconditions are local only',
+    ],
+    ['Ledger check', 'no dev skill reads the ledger for permission (D8)'],
+  ]);
+}
+requireContent('plugins/yieldwerx-probe/skills/build-feature/SKILL.md', [
+  'Never edit a `.feature` file',
+  'code never becomes the requirement',
+  'testability-scout',
+]);
+requireContent('plugins/yieldwerx-probe/skills/revise-feature/SKILL.md', [
+  'downstream-invalidation list',
+  'Never edit the QA artifacts you invalidate',
+  '--breaking-ok',
+]);
+requireContent('plugins/yieldwerx-probe/skills/fix-defect/SKILL.md', [
+  'Write the failing test first',
+  'Never close the bug candidate yourself',
+  '--no-test',
+]);
+requireContent('plugins/yieldwerx-probe/skills/seed-testability/SKILL.md', [
+  'Never edit a page object, a feature file, or a recon artifact',
+  'value-named handle is a gap',
+]);
+requireContent('plugins/yieldwerx-probe/skills/review-code/SKILL.md', [
+  'Never sign a gate',
+  'Never edit code',
+  'demoted to an observation',
+  '`--depth` defaults to `thorough`',
+  '`quick` narrows',
+]);
+requireContent('plugins/yieldwerx-probe/skills/ship-change/SKILL.md', [
+  'Never merge, ever',
+  'downstream-invalidation list',
+  '`describe` prepares the pull-request body and ship notes without',
+  'Use `--base <ref>`',
+]);
+requireContent('plugins/yieldwerx-probe/references/configuration.md', [
+  'When `profile: node-ts-spa` is selected',
+  'rules/selector-policy.md',
+  'rules/service-conventions.md',
+]);
+requireContent('README.md', [
+  'https://github.com/tafseer-yw/yieldwerx-probe.git',
+  'All 34 `yw:*` skills are explicitly user-invocable',
+  'examples/node-ts-spa/probe.config.yaml',
+]);
+requireContent('plugins/yieldwerx-probe/agents/build-verifier.md', [
+  'Report failures verbatim',
+  'unmet obligations is still reported as `red`',
+]);
+requireContent('plugins/yieldwerx-probe/agents/code-reviewer.md', [
+  'Test code belongs to `script-auditor`',
+  'Never edit code',
+]);
+
+// --- Gate hibernation (P17) -------------------------------------------------
+// Hibernation is only safe because it suspends BLOCKING and nothing else. Each
+// marker below is one of the properties that keeps it from becoming a silent
+// waiver: evidence still assembled, verdict still honest, never rendered as
+// approval, and every proceeding stage recorded so resumption has a debt list.
+requireContent('plugins/yieldwerx-probe/references/governance/gate-hibernation.md', [
+  'without pretending they passed',
+  'The severity ladder is untouched',
+  'No gate is ever reported as approved',
+  'gate-debt list',
+  'An expired hibernation is reported as expired',
+]);
+requireContent('plugins/yieldwerx-probe/references/process/PROBE-PROCESS.md', [
+  '### P17 — Gates may be hibernated, never faked',
+  'Hibernation suspends blocking and nothing else',
+]);
+for (const gate of ['gate-design', 'gate-merge', 'gate-ops']) {
+  requireContent(`plugins/yieldwerx-probe/skills/${gate}/SKILL.md`, [
+    '## Gate hibernation (evaluation mode)',
+    'HIBERNATED — evidence assembled, not signed',
+    'Assemble',
+  ]);
+  forbidContent(`plugins/yieldwerx-probe/skills/${gate}/SKILL.md`, [
+    [
+      'hibernated — approved',
+      'a hibernated gate is never rendered as approval (P17); that is falsified evidence',
+    ],
+  ]);
+}
+requireContent('plugins/yieldwerx-probe/skills/forge-scripts/SKILL.md', [
+  'Gate hibernation is checked first',
+  'real readiness verdict',
+]);
+requireContent('plugins/yieldwerx-probe/skills/testops-promote/SKILL.md', [
+  'or hibernated',
+  'Hibernation never affects this',
+]);
+requireContent('plugins/yieldwerx-probe/skills/probe-spec/references/ledger-template.md', [
+  '### Gate hibernation (repository-wide',
+  'These rows are the gate-debt list',
+  'hibernated — evaluation mode',
+]);
+
 const readme = fs.readFileSync(path.join(root, 'README.md'), 'utf8');
-if (!readme.includes('## All 27 public skills: arguments and composition')) {
-  errors.push('README.md: missing the explicit all-27 public skill inventory heading');
+if (!readme.includes('## All 34 public skills: arguments and composition')) {
+  errors.push('README.md: missing the explicit all-34 public skill inventory heading');
 }
 const skillUsage = fs
   .readFileSync(path.join(root, 'docs', 'SKILL-USAGE.md'), 'utf8')
@@ -539,6 +825,9 @@ if (actualAgents.join('|') !== [...expectedAgents].sort().join('|')) {
 }
 for (const agent of actualAgents) {
   checkFrontmatter(path.join(agentsRoot, agent), agent.replace(/\.md$/, ''));
+  if (devAgents.includes(agent)) {
+    checkDevTrackFrontmatter(path.join(agentsRoot, agent), actualSkills, knownAgentNames);
+  }
 }
 
 for (const requiredPath of [
@@ -550,6 +839,7 @@ for (const requiredPath of [
   'docs/CLI.md',
   'docs/SKILL-USAGE.md',
   'examples/generic/probe.config.yaml',
+  'examples/node-ts-spa/probe.config.yaml',
   'examples/playwright-bdd/probe.config.yaml',
   'bin/probe.mjs',
   'plugins/yieldwerx-probe/lib/probe-config.mjs',
@@ -558,6 +848,10 @@ for (const requiredPath of [
   'plugins/yieldwerx-probe/references/process/PROBE-PROCESS.md',
   'plugins/yieldwerx-probe/references/process/PROBE-PLAYBOOK.md',
   'plugins/yieldwerx-probe/references/process/PROBE-QUICKREF.md',
+  'plugins/yieldwerx-probe/references/process/DEV-TRACK.md',
+  'plugins/yieldwerx-probe/references/profiles/node-ts-spa/README.md',
+  'plugins/yieldwerx-probe/references/profiles/node-ts-spa/rules/selector-policy.md',
+  'plugins/yieldwerx-probe/references/profiles/node-ts-spa/rules/service-conventions.md',
   'plugins/yieldwerx-probe/skills/probe-spec/references/existing-analysis-modes.md',
   'plugins/yieldwerx-probe/skills/probe-spec/references/ledger-template.md',
   'plugins/yieldwerx-probe/skills/probe-spec/scripts/validate-spec-reconciliation.mjs',
@@ -654,6 +948,21 @@ for (const expectedLine of [
 ]) {
   if (!playwrightConfig.includes(expectedLine)) {
     errors.push(`examples/playwright-bdd/probe.config.yaml: missing '${expectedLine}'`);
+  }
+}
+
+const nodeSpaConfig = fs.readFileSync(
+  path.join(root, 'examples', 'node-ts-spa', 'probe.config.yaml'),
+  'utf8',
+);
+for (const expectedLine of [
+  `probeVersion: ${manifest.version}`,
+  'profile: node-ts-spa',
+  'documentUrl: http://127.0.0.1:3000/openapi.json',
+  'testIdRequired: true',
+]) {
+  if (!nodeSpaConfig.includes(expectedLine)) {
+    errors.push(`examples/node-ts-spa/probe.config.yaml: missing '${expectedLine}'`);
   }
 }
 

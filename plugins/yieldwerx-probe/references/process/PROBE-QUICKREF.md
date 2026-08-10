@@ -1,7 +1,8 @@
 # PROBE Quick Reference
 
 One page. Full authority: [PROBE-PROCESS.md](PROBE-PROCESS.md) ·
-Copy-paste prompts for every step: [PROBE-PLAYBOOK.md](PROBE-PLAYBOOK.md).
+Copy-paste prompts for every step: [PROBE-PLAYBOOK.md](PROBE-PLAYBOOK.md) ·
+Building the application under test: [DEV-TRACK.md](DEV-TRACK.md).
 
 ## Starting a new feature (the card)
 
@@ -111,12 +112,51 @@ never rewrites an AC from the application, and it is not UI Recon: the former
 finds requirement/build mismatches before case design; the latter harvests
 locators and `data-testid` gaps after the Design Gate.
 
+## Building the application under test (the dev card)
+
+```text
+ 0. /scaffold-app <app-slug> --stack <profile>   → contracts before features:
+                                                    documented API, roles, datastore,
+                                                    seed+reset, selector policy
+ 1. /build-feature <feature-slug> [--ac AC-NN]   → clarify → design → bounded tasks
+                                                    → implement → verify to green
+ 2. /seed-testability <feature-slug>             → only for code that predates the
+                                                    obligation; new code clears its own
+ 3. /review-code <feature-slug> [branch]         → independent GO / NO-GO
+ 4. /ship-change <feature-slug> [--push]         → commits + PR body + invalidation list
+
+ changing behaviour → /revise-feature <slug> -- <what must change>
+ a filed defect     → /fix-defect <slug> "<symptom>"   (failing test FIRST)
+```
+
+**None of these waits on a gate.** The dev card runs top to bottom on a
+repository that has never used the QA track — no ledger is read, no Design,
+Merge, or Ops Gate is checked, and no QA artifact has to exist. A spec analysis,
+a bug candidate, and a recon gap list are all *better input* where they exist,
+never a precondition (DEV-TRACK policy D8).
+
+Three rules keep the tracks from corrupting each other:
+
+1. **The requirement owns behaviour.** Code never becomes the requirement; a
+   mismatch goes back to `/probe-spec --reconcile` or into the build report's
+   open questions.
+2. **Testability is a build obligation.** Every control ships a stable
+   identifier, every route ships in the served API document, every asserted value
+   is readable without scraping a rendering. An unmet obligation makes the change
+   `red` even when every command passed.
+3. **Neither track edits the other's artifacts.** A dev change that makes a case
+   wrong emits a downstream-invalidation list; `/update-cases` amends it.
+
+`/review-code` never signs a gate. `/fix-defect` never closes a bug candidate.
+`/ship-change` never merges.
+
 ## Where things live
 
 | What                                            | Where                                              |
 | ----------------------------------------------- | -------------------------------------------------- |
 | Feature status (glance view)                    | `docs/qa/<feature>/LEDGER.md`                      |
 | Working/run artifacts (gitignored; CI-archived) | `.probe/artifacts/<feature>/<NN-stage>/`           |
+| Development-track artifacts                     | `.probe/artifacts/<feature>/70-build/`             |
 | Signed gate reports (committed)                 | `docs/qa/<feature>/audit/gate-*.md`                |
 | Conventions                                     | `CLAUDE.md` · locator policy, chart contract, tags |
 
@@ -162,6 +202,29 @@ cases by hand, records per-case results and exploratory sessions via
 evidence is what lets a feature ship before automation lands. Growth path:
 toward Domain Test Analyst (deeper domain review) or Automation Engineer
 (scripting under review).
+
+## Gate hibernation (evaluation mode)
+
+A repository may suspend the three gates by declaring `governance.gates` in
+`probe.config.yaml`. **Hibernation suspends blocking and nothing else.**
+
+```text
+gate still runs · evidence still assembled · verdict still honest
+decision line   → HIBERNATED — evidence assembled, not signed
+NOT suspended   → severity ladder (blocker still halts) · Case/Script Audit
+                  verdicts · traceability · external-write approval ·
+                  the repo's own branch protection
+never           → approved / passed / signed  (that is falsified evidence)
+```
+
+`/forge-scripts` and `/testops-promote` accept the hibernation record instead of
+the approval they normally demand, and record the gate's real readiness verdict
+when they do. Every stage that proceeds writes a ledger row; when gates resume,
+those rows **are** the gate-debt list — each is then signed, bypassed, or fixed.
+A gate that said `NOT READY` under hibernation does not become `READY` because
+time passed. Resume by setting `mode: active` or deleting the block.
+
+Authority: [gate-hibernation.md](../governance/gate-hibernation.md) · policy P17.
 
 ## The three iron rules
 
