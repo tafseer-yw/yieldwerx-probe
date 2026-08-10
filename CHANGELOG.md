@@ -2,6 +2,12 @@
 
 All notable changes to YieldWerx PROBE are recorded here.
 
+## 2.9.3 — 2026-08-10
+
+- Added the human-readable plugin name **yieldWerx PROBE** for Claude Desktop
+  while retaining `yw` as the stable plugin identifier and short command
+  namespace.
+
 ## 2.9.2 — 2026-08-05
 
 - **Claude Desktop marketplace sync is now supported.** The portable npm CLI
