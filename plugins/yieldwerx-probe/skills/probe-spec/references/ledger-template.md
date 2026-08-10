@@ -34,6 +34,29 @@ Statuses: pending · in-progress · done · blocked · waived · n/a
 
 ## Gate approvals (human decisions)
 
+### Gate hibernation (repository-wide, from `governance.gates`)
+
+When `probe.config.yaml` declares `governance.gates.mode: hibernated`, gates
+assemble evidence but do not block. **These rows are the gate-debt list** — when
+gates resume, every one of them is signed, explicitly bypassed, or remediated.
+Append one row per stage that proceeded under hibernation; never overwrite an
+earlier row.
+
+| Date | Stage / gate | Authorized by | Real readiness verdict | Outstanding items |
+| ---- | ------------ | ------------- | ---------------------- | ----------------- |
+|      |              |               |                        |                   |
+
+- Gate status cell: `hibernated — evaluation mode`. **Never `approved`,
+  `passed`, or `signed`** — a hibernated gate that reads as approval is
+  falsified evidence and is `blocker` under the ladder.
+- `Real readiness verdict` is what the gate report actually said: `READY FOR
+  APPROVAL` or `NOT READY` with its failing items. Recording `NOT READY` here is
+  the point of the row, not a problem with it.
+- Signature fields stay **empty and unmarked**. No signature is owed, so none is
+  implied.
+- Hibernation does not waive Case Audit, Script Audit, any `blocker`, or any
+  manual-only expiry/backfill obligation. Those keep their own rows.
+
 ### Design Gate — default signer: Domain Test Analyst
 
 - Approved by: ____ · Role: ____ · Date: ____ · Decision: approved / rejected

@@ -164,6 +164,48 @@ see the active integration/profile guidance), **/flake-triage**
 (when the consumer provides change-impact commands: which cases/scripts a UI
 change breaks, with proposed fixes).
 
+### The development track
+
+A fourth track builds and corrects the application these three test. It has its
+own skills, agents, artifacts and policies, and its own authority document:
+[DEV-TRACK.md](DEV-TRACK.md).
+
+```
+ DEVELOPMENT TRACK
+ /scaffold-app        → an application whose QA contracts exist from commit one
+ /build-feature       → approved requirement  → verified capability
+ /revise-feature      → changed behaviour     + downstream-invalidation list
+ /fix-defect          → bug candidate         → failing test → minimal fix
+ /seed-testability    → recon gap list        → shipped selector/API contracts
+ /review-code         → application code      → GO / NO-GO
+ /ship-change         → hygiene, commits, PR body carrying the evidence
+```
+
+**The development track is gate-independent (DEV-TRACK policy D8).** No
+development skill checks a ledger, waits on the Design, Merge, or Ops Gate, or
+requires any QA artifact to exist. Every one of them runs on a repository that
+has never used this process. Where a QA artifact is present it is consumed as
+better input, never as a precondition — because gating a developer's ability to
+build on a signature the QA team owns would make the track unusable.
+
+With both tracks running, the two sides may meet at four optional seams, and
+nowhere else:
+
+1. `10-spec/spec-analysis.md` is read by both. Neither rewrites it; a
+   requirement change goes through `/probe-spec --reconcile`.
+2. A running build produced by the dev track is observed by
+   `/probe-implementation`, `/ui-recon` and `/api-recon`.
+3. A bug candidate from `/bug-report` is consumed by `/fix-defect`, which
+   produces the evidence but never closes the candidate.
+4. A dev change that invalidates QA artifacts emits a
+   **downstream-invalidation list** naming exact feature files, TC ids, locator
+   entries and fixtures — routed to `/update-cases`, `/change-impact`,
+   `/ui-recon` or `/api-recon`, never amended by the dev skill itself.
+
+**No development skill signs, assembles, or substitutes for a gate.** A
+`/review-code` verdict is engineering evidence a human weighs; the Design, Merge
+and Ops Gates remain exactly as specified in this document.
+
 ---
 
 ## 3. Workflows
@@ -540,6 +582,37 @@ cases, scripts, external records, run evidence, or human signatures.
 The feature ledger keeps an append-only Spec reconciliations table. Later gates
 treat evidence that predates a substantive reconciliation as stale for the
 named ACs until the routed amendment, audit, and review work is complete.
+
+### P17 — Gates may be hibernated, never faked
+
+A consumer repository may suspend the Design, Merge, and Ops Gates by declaring
+`governance.gates` in `probe.config.yaml`. This exists so a team can run PROBE
+end to end before agreeing to be bound by it: during an evaluation, a gate that
+blocks delivery is an adoption barrier, and the usual outcome is that the team
+abandons the process rather than the shipping.
+
+**Hibernation suspends blocking and nothing else.** The gate still runs, still
+assembles its evidence, and still reports `READY` or `NOT READY` with every
+failing checklist item intact. Its decision line reads
+`HIBERNATED — evidence assembled, not signed`. It is never `approved`,
+`passed`, or `signed`; rendering it as one is falsified evidence and is
+`blocker` under the ladder.
+
+Five things are explicitly **not** suspended, and a skill that suspends any of
+them has misread the policy: the severity ladder (a `blocker` still halts, and
+wrong business data is still `blocker`), Case Audit and Script Audit verdicts,
+the traceability chain, external-write authorization, and the repository's own
+branch protection and merge controls, which PROBE does not own.
+
+`mode: hibernated` requires a named `authorizedBy`, a `reason`, a `scope`, and a
+`since` date. A hibernation with no named human is not a governance decision and
+is rejected. Every stage that proceeds under it writes a ledger row carrying the
+authorizer and the gate's real readiness verdict; when gates resume, those rows
+**are** the gate-debt list, and each is then signed, explicitly bypassed, or
+remediated. A gate that said `NOT READY` under hibernation does not become
+`READY` because time passed.
+
+Full contract: [gate-hibernation.md](../governance/gate-hibernation.md).
 
 ---
 

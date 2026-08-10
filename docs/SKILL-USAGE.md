@@ -81,7 +81,35 @@ This is the operator reference for all public `yw:*` skills. The corresponding
 | `/yw:flake-triage`    | `<feature-slug-or-scenario> [evidence-path]` | Classify intermittent behavior and control quarantine/exit evidence.                                                               |
 | `/yw:change-impact`   | `[base-ref]`                                 | Compare frontend changes against the given Git base reference or configured default and propose affected tests.                    |
 
+### Development track
+
+**Gate-independent.** No skill here checks a ledger, waits on the Design, Merge,
+or Ops Gate, or requires a QA artifact to exist; each one runs on a repository
+that has never used the QA track. A spec analysis, a bug candidate, and a recon
+gap list are better input where they exist, never preconditions. Neither track
+edits the other's artifacts. Authority: `references/process/DEV-TRACK.md`.
+
+| Skill                  | Accepted arguments                                                                                                                          | Typical use and handoff                                                                                                   |
+| ---------------------- | ------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------- |
+| `/yw:scaffold-app`     | `<app-slug> [--stack <profile-name>] [--surfaces api,ui,db,auth,queue] [--dry-run]`                                                         | Stand up an application whose QA contracts exist from the first commit. Once per application; refuses over existing code. |
+| `/yw:build-feature`    | `<feature-slug> [--ac AC-NN] [--category CAT-NN] [--requirement <path>] [--no-requirement "<reason>"]`                                      | Approved requirement to verified capability on `feat/<slug>`. Clears its own observability obligations before it closes.  |
+| `/yw:revise-feature`   | `<feature-slug> -- <what must change> [--breaking-ok "<authorization>"] [--ac AC-NN]`                                                       | Change existing behavior compatibly; hands the QA track a downstream-invalidation list routed to `/yw:update-cases`.      |
+| `/yw:fix-defect`       | `<feature-slug> "<defect-slug-or-symptom>" [--candidate <path>] [--tc TC-id] [--no-test "<reason>"]`                                        | Close the loop from `/yw:bug-report`. Failing test first; never closes the candidate itself.                              |
+| `/yw:seed-testability` | `<feature-slug> [--from-recon <path>] [--surface ui\|api\|results\|all] [--rank high\|medium\|all]`                                         | Turn a recon gap list into shipped selector and API-document contracts. Changes observability, never behavior.            |
+| `/yw:review-code`      | `<feature-slug> [branch\|--staged\|--files <path,...>] [--focus correctness\|security\|data\|observability\|all] [--depth quick\|thorough]` | Independent adversarial review of application code. Routes automation to `/yw:audit-scripts`; never signs a gate.         |
+| `/yw:ship-change`      | `<feature-slug> [commit\|describe\|both] [--push] [--open-pr] [--base <ref>]`                                                               | Hygiene plus the selected commit and/or PR-description output. Outward actions need explicit authorization; never merges. |
+
 ## Detailed argument behavior
+
+### Development review and shipping modes
+
+- `/yw:review-code --depth quick` checks the frozen diff and the immediate
+  context needed to prove findings; `--depth thorough` (the default) traces all
+  affected dependents, migrations, owning suites, and profile obligations.
+- `/yw:ship-change commit` creates local commits only; `describe` prepares the
+  pull-request body without staging or committing; `both` does both and is the
+  default. `--base` is the comparison and pull-request target. `--push` is
+  invalid with `describe`, and `--open-pr` is invalid with `commit`.
 
 ### Shared selectors
 

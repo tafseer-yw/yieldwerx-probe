@@ -8,7 +8,14 @@ knowledge.
 ## Change contract
 
 - Treat `plugins/yieldwerx-probe/references/process/PROBE-PROCESS.md` as process
-  authority. Update affected skills and agents in the same pull request.
+  authority. Update affected skills and agents in the same pull request. The
+  development track's authority is
+  `plugins/yieldwerx-probe/references/process/DEV-TRACK.md`; where the two
+  appear to conflict, PROBE-PROCESS wins and the conflict is reported.
+- Development-track skills and agents carry `track: dev`, a `safety:` level, and
+  a `graph:` block whose edges repository validation resolves. A dev skill must
+  never write to `docs/qa/`, amend a feature file or case artifact, or sign,
+  assemble, or substitute for a gate.
 - Keep core instructions independent of Playwright, Cucumber, TypeScript,
   Jenkins, AIO, Plotly, or any consumer directory layout. Put stack-specific
   material in a named profile or adapter and require explicit configuration.

@@ -48,9 +48,17 @@ Make the merged scenarios part of the pipeline's steady state.
 
 ## Preconditions
 
-- Merge Gate signed or recorded as
-  `waived — allrounder gate bypass` (check the ledger), and the branch merged
-  to main through its normal repository authorization and protection rules.
+- Merge Gate signed, recorded as
+  `waived — allrounder gate bypass` (check the ledger), **or hibernated** — read
+  `governance.gates` in `probe.config.yaml`; authority is
+  `${CLAUDE_PLUGIN_ROOT}/references/governance/gate-hibernation.md`. When
+  `mode: hibernated` covers `merge` and `until` has not passed, the hibernation
+  record satisfies this precondition. Record in the promotion artifact and the
+  ledger: that the Merge Gate was hibernated, the authorizer, and **the gate's
+  real readiness verdict at the time**.
+- The branch is merged to main through its normal repository authorization and
+  protection rules. **Hibernation never affects this** — it suspends a PROBE
+  gate, not the repository's own merge controls, which PROBE does not own.
 
 ## Procedure
 

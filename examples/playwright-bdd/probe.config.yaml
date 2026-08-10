@@ -1,5 +1,5 @@
 schemaVersion: 1
-probeVersion: 2.9.3
+probeVersion: 2.11.0
 profile: playwright-bdd
 
 paths:
@@ -48,3 +48,11 @@ policies:
   preserveManualTag: true
   testIdRequired: true
   wrongBusinessDataSeverity: blocker
+
+# Gate hibernation — suspends BLOCKING only. Evidence is still assembled, the
+# readiness verdict is still honest, and no gate is ever reported as approved.
+# Omit this block entirely for normal gated delivery (the default).
+# Authority: references/governance/gate-hibernation.md
+governance:
+  gates:
+    mode: active # active | hibernated
