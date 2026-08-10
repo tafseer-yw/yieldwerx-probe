@@ -85,7 +85,7 @@ argument contract, or full 5W1H catalog entry is missing.
 | `/yw:update-cases`               | `<feature-slug> -- <what needs to change>`                                                                                                          |
 | `/yw:audit-cases`                | `<feature-slug> [--scenario-type positive\|functional\|negative\|edge\|all] [--category CAT-NN] [--ac AC-NN] [--tc TC-id]`                          |
 | `/yw:gate-design`                | `<feature-slug> [--category CAT-NN] [approved] [bypass Case Audit] [bypass Design Gate] [--owner-receipt <path>]`                                   |
-| `/yw:bypass-gate`                | `<feature-slug> <design\|merge\|ops\|all> [--category CAT-NN] [--reason "<reason>"]`                                                                |
+| `/yw:bypass-gate`                | `<feature-slug> <case-audit\|script-audit\|audits\|design\|merge\|ops\|all> [--category CAT-NN] [--reason "<reason>"]`                              |
 | `/yw:owner-bypass`               | `<feature-slug> --item "<stage/gate/item>" --reason "<reason>" [--scope feature\|CAT-NN] [--receipt <path>]`                                        |
 | `/yw:sync-cases`                 | `<feature-slug> [--live] [--category CAT-NN]`                                                                                                       |
 | `/yw:ui-recon`                   | `<feature-slug> [env] [--with-api-recon] [--spec <path-or-url>] [--with-case-execution] [--tc <id,id,...>] [--role <role>] [--continue-on-failure]` |
@@ -98,7 +98,7 @@ argument contract, or full 5W1H catalog entry is missing.
 | `/yw:forge-performance-tests`    | `<feature-slug> [--profile smoke\|load\|spike\|stress\|endurance] [--operation operation-id]`                                                       |
 | `/yw:audit-scripts`              | `<feature-slug> [branch] [--scenario-type positive\|functional\|negative\|edge\|all] [--category CAT-NN] [--ac AC-NN] [--tc TC-id]`                 |
 | `/yw:green-run`                  | `<feature-slug> [branch] [--scenario-type positive\|functional\|negative\|edge\|all] [--category CAT-NN] [--ac AC-NN] [--tc TC-id]`                 |
-| `/yw:gate-merge`                 | `<feature-slug> [bypass Merge Gate]`                                                                                                                |
+| `/yw:gate-merge`                 | `<feature-slug> [bypass Script Audit] [bypass Merge Gate]`                                                                                          |
 | `/yw:testops-promote`            | `<feature-slug>`                                                                                                                                    |
 | `/yw:gate-ops`                   | `<feature-slug> [N-runs] [bypass Ops Gate]`                                                                                                         |
 | `/yw:bug-report`                 | `<feature-slug> <one-line-symptom>`                                                                                                                 |
@@ -301,17 +301,18 @@ Substantive case changes are routed to `/yw:update-cases`.
 
 ### `bypass-gate`
 
-- **Why:** Let an accountable allrounder move past a gate without pretending
-  missing or failed evidence passed.
-- **What:** Bypass the Design, Merge, Ops, or all applicable PROBE gates for an
-  exact feature/category scope.
+- **Why:** Let an accountable allrounder move past a gate or audit without
+  pretending missing or failed evidence passed.
+- **What:** Bypass Case Audit, Script Audit, both audits, Design Gate, Merge
+  Gate, Ops Gate, or all three gates for an exact feature/category scope.
 - **When:** Only after a named QA Lead or Automation Engineer explicitly says
-  to bypass the named gate or all gates.
-- **Where:** Update each committed gate report and the feature ledger, with one
-  waiver row per gate.
-- **How:** Preserve the real evidence verdict, record `Decision: bypassed`,
-  human identity, reason, gaps, and residual risk, then let downstream stages
-  accept only that exact `waived — allrounder gate bypass` scope.
+  to bypass the named audit/gate, all audits, or all gates.
+- **Where:** Update each applicable audit/gate report and the feature ledger,
+  with one waiver row per scope.
+- **How:** Preserve the real verdict and findings, record human identity,
+  reason, gaps, and residual risk, then let downstream stages accept only that
+  exact waiver. Script Audit waivers are bound to the exact TC inventory and
+  commit/file-hash manifest. `audits` and `all` are deliberately separate.
 
 ### `owner-bypass`
 
@@ -435,17 +436,20 @@ Substantive case changes are routed to `/yw:update-cases`.
 
 - **Why:** Block brittle, unsafe, or self-passing automation.
 - **What:** Independently audit code, assertions, data, and evidence.
-- **When:** After each Script Forge cycle and after material fixes.
+- **When:** After each Script Forge cycle and after material fixes, unless a
+  named allrounder explicitly waives the exact current manifest.
 - **Where:** Inspect consumer implementation plus `60-scripts`; write
   `70-script-audit`.
 - **How:** Pin commit/TC scope, run configured checks, use a read-only auditor,
-  and fail closed on unresolved high-risk findings.
+  and fail closed on unresolved high-risk findings. An explicit bypass routes
+  through `bypass-gate` and preserves the real findings and risk.
 
 ### `green-run`
 
 - **Why:** Prove repeatable reliability rather than a single lucky pass.
 - **What:** Produce a diagnosed consecutive-green execution record.
-- **When:** After Script Audit passes; restart after every automation fix.
+- **When:** After Script Audit passes or an exact manifest-bound allrounder
+  Script Audit waiver is current; restart after every automation fix.
 - **Where:** Run in configured CI-equivalent conditions; write `80-green-run`.
 - **How:** Execute exact scope three times green by default, record provenance,
   reset on failure, and route intermittent behavior to Flake Triage.
@@ -455,11 +459,13 @@ Substantive case changes are routed to `/yw:update-cases`.
 - **Why:** Keep unstable or insufficiently evidenced automation out of main.
 - **What:** Assemble scripting, audit, stability, coverage, and observability
   evidence.
-- **When:** After complete Script Forge, Script Audit, and Stability Run.
+- **When:** After complete Script Forge, a Script Audit PASS or exact current
+  waiver, and Stability Run.
 - **Where:** Read consumer evidence; commit the Merge Gate report by the ledger.
 - **How:** Cross-check current-commit evidence, regenerate coverage, expose
-  gaps, and request human sign-off. A named allrounder may explicitly bypass
-  the gate while keeping its real readiness and residual risk visible.
+  gaps, and request human sign-off. A Script Audit waiver satisfies only that
+  audit prerequisite; any resulting Merge Gate waiver is a separate explicit
+  decision. Every bypass keeps the real readiness and residual risk visible.
 
 ### `testops-promote`
 

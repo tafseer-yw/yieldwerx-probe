@@ -50,7 +50,7 @@ earlier row.
   `passed`, or `signed`** — a hibernated gate that reads as approval is
   falsified evidence and is `blocker` under the ladder.
 - `Real readiness verdict` is what the gate report actually said: `READY FOR
-  APPROVAL` or `NOT READY` with its failing items. Recording `NOT READY` here is
+APPROVAL` or `NOT READY` with its failing items. Recording `NOT READY` here is
   the point of the row, not a problem with it.
 - Signature fields stay **empty and unmarked**. No signature is owed, so none is
   implied.
@@ -88,6 +88,25 @@ missing review, residual risk, and
 The audit bypass covers only Case Audit. Any other blocking PROBE item remains
 open unless fixed or separately authorized by the PROBE Owner.
 
+### Allrounder Script Audit bypass
+
+A named QA Lead or Automation Engineer may explicitly waive a missing, blocked,
+or failed Script Audit for the whole feature or one category through
+`/bypass-gate`. Record the Script Audit stage/category cell as
+`waived — allrounder Script Audit bypass`. Keep the audit artifact and real
+verdict/findings, or record `not assembled` when the independent review did not
+run. Add a separate waiver row with:
+
+- exact feature/category and TC inventory;
+- exact commit or file-hash manifest;
+- human name, allrounder role, date, and reason;
+- known findings or missing review and residual risk;
+- `direct allrounder bypass in the current Claude session`.
+
+The waiver satisfies Stability Run and Merge Gate's audit prerequisite only for
+that manifest. Any script change makes it stale. It is never PASS and never
+bypasses the Merge Gate itself.
+
 ### PROBE Owner override
 
 PROBE Owner **Tafseer Haider** (`tafseer.haider@yieldwerx.com`) has allrounder
@@ -114,7 +133,9 @@ bypass. Use `/bypass-gate` and record:
 Keep the gate report's real evidence verdict (`READY`, `NOT READY`, or
 `not assembled`). Never call a bypass `approved`, `signed`, `done`, or `PASS`.
 When the allrounder says `bypass all gates`, add a separate decision and waiver
-row for Design, Merge, and Ops; do not use one wildcard row.
+row for Design, Merge, and Ops; do not use one wildcard row. When the allrounder
+says `bypass all audits`, add separate Case Audit and Script Audit rows. Gates
+and audits never silently imply each other.
 
 ### Per-category Design Gate approvals
 

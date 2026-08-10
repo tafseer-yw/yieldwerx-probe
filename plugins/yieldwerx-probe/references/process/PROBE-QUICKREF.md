@@ -51,12 +51,13 @@ Building the application under test: [DEV-TRACK.md](DEV-TRACK.md).
        or explicitly bypasses it → DONE — OPS GATE BYPASSED
 ```
 
-Any named QA Lead or Automation Engineer may run
-`/bypass-gate <feature> <design|merge|ops|all>`. `all` means the three
-feature-wide gates and expands to separate Design, Merge, and Ops waiver
-records. Category scope is supported only for Design. `bypass everything` is
-rejected as ambiguous. The evidence remains READY, NOT READY, or not
-assembled; a bypass is never shown as approved or passed.
+Any named QA Lead or Automation Engineer may run `/bypass-gate` for
+`case-audit`, `script-audit`, `audits`, `design`, `merge`, `ops`, or `all`.
+`audits` expands to separate Case and Script Audit waivers; `all` expands only
+to the three feature-wide gate waivers. Category scope is supported for audits
+and Design Gate. `bypass everything` is rejected as ambiguous. The evidence
+remains READY, NOT READY, FAIL, or not assembled; a bypass is never shown as
+approved or passed.
 
 PROBE Owner Tafseer Haider (`tafseer.haider@yieldwerx.com`) may waive any exact
 PROBE item with `/owner-bypass`. The PIN and generated signing key stay in the
@@ -132,7 +133,7 @@ locators and `data-testid` gaps after the Design Gate.
 **None of these waits on a gate.** The dev card runs top to bottom on a
 repository that has never used the QA track — no ledger is read, no Design,
 Merge, or Ops Gate is checked, and no QA artifact has to exist. A spec analysis,
-a bug candidate, and a recon gap list are all *better input* where they exist,
+a bug candidate, and a recon gap list are all _better input_ where they exist,
 never a precondition (DEV-TRACK policy D8).
 
 Three rules keep the tracks from corrupting each other:
@@ -225,6 +226,13 @@ A gate that said `NOT READY` under hibernation does not become `READY` because
 time passed. Resume by setting `mode: active` or deleting the block.
 
 Authority: [gate-hibernation.md](../governance/gate-hibernation.md) · policy P17.
+
+An allrounder may separately say `bypass Case Audit`, `bypass Script Audit`, or
+`bypass all audits`. `/bypass-gate` records one waiver per audit with the real
+verdict/findings and residual risk intact. Script Audit bypass is bound to the
+exact TC inventory and commit/file-hash manifest; any script change invalidates
+it. Audit bypass never implies Design/Merge/Ops bypass, and `bypass all gates`
+never implies audit bypass.
 
 ## The three iron rules
 

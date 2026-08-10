@@ -97,7 +97,9 @@ to waive it.
 A named QA Lead or Automation Engineer allrounder may explicitly waive Case
 Audit for the whole feature or one category. A direct statement such as
 `bypass Case Audit and approve` is sufficient when the human name and
-allrounder role are known.
+allrounder role are known. Route the waiver through
+`/bypass-gate <feature> case-audit`; Gate Design may coordinate that skill while
+assembling this report.
 
 - Do not treat a bare `approved` as an audit bypass.
 - The bypass covers a Case Audit that is missing, blocked, or failed, including
@@ -107,6 +109,8 @@ allrounder role are known.
 - Record the reason, known findings or missing evidence, residual risk, human
   name, role, date, and direct-session evidence in both the gate report and
   ledger waiver table.
+- Record current case/spec hashes when available. A material input change makes
+  the waiver stale and requires a fresh direct instruction.
 - The bypass waives only Case Audit. Spec Probe, Case Forge, coverage, lint,
   traceability, and expected-behavior checks still run.
 - The same allrounder may approve the resulting gate. If another PROBE item is
@@ -174,8 +178,8 @@ the overall Design Gate in progress until every in-scope category is approved.
    - a named allrounder explicitly bypassed the exact feature/category audit,
      in which case record it as `waived — allrounder Case Audit bypass`; or
    - an active PROBE Owner receipt covers that exact audit item and scope.
-   If another stage is missing, run it only when its inputs are available and
-   the requested action authorizes its writes; otherwise stop with the gap.
+     If another stage is missing, run it only when its inputs are available and
+     the requested action authorizes its writes; otherwise stop with the gap.
 2. Re-read the artifacts. Cross-check, don't trust:
    - when Implementation Probe completed, its report names the compared build
      and gives every in-scope AC a result; record divergence and

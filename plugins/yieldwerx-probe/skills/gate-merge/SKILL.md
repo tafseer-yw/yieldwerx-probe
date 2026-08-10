@@ -1,13 +1,13 @@
 ---
 name: gate-merge
 user-invocable: true
-description: Use when Script Forge, Script Audit, and Stability Run evidence must be assembled for Merge Gate sign-off, or when a named QA Lead or Automation Engineer explicitly bypasses the Merge Gate. Includes the hard testId-coverage check, preserves NOT READY findings, and records a bypass as a human waiver rather than a pass.
+description: Use when Script Forge, Script Audit (PASS or exact allrounder waiver), and Stability Run evidence must be assembled for Merge Gate sign-off, or when a named QA Lead or Automation Engineer explicitly bypasses Script Audit or the Merge Gate. Includes the hard testId-coverage check, preserves NOT READY findings, and records bypasses as human waivers rather than passes.
 track: scripting
 safety: writes-shared
 produces: docs/qa/<feature>/audit/gate-merge.md (committed), docs/qa/<feature>/coverage.{md,json} (refreshed via the configured requirementsCoverage command)
 consumes: features/<feature>/*.feature, 20-cases/automation-plan.md, 60-scripts/forge-notes.md, 70-script-audit/script-audit.md, 80-green-run/green-run.md, applicable observability gaps (40-ui-recon/testid-gaps.md only for UI), LEDGER.md
 chains: /forge-scripts, /audit-scripts, /green-run, /bypass-gate
-argument-hint: <feature-slug> [bypass Merge Gate]
+argument-hint: <feature-slug> [bypass Script Audit] [bypass Merge Gate]
 ---
 
 > **Consumer contract:** Before using paths, commands, integrations, or
@@ -91,6 +91,23 @@ the report is `NOT READY`.
   the branch, bypass branch protection, or authorize an external merge.
 - A bare `approved`, `continue`, or `go ahead` is not a bypass.
 
+## Allrounder Script Audit bypass
+
+A named QA Lead or Automation Engineer may explicitly waive a missing, blocked,
+or failed Script Audit through `/bypass-gate <feature> script-audit`.
+
+- Keep the audit artifact, real verdict, and every finding unchanged; when no
+  audit ran, record `not assembled` and the missing independent review.
+- Record `waived — allrounder Script Audit bypass`, the exact feature/category,
+  TC inventory, and commit/file-hash manifest. Any script change makes the
+  waiver stale and requires a new direct instruction.
+- The waiver satisfies Stability Run and this gate's Script Audit prerequisite
+  only for that exact scope. It is never `PASS` and may leave this gate
+  `NOT READY` because the findings and residual risk remain real.
+- A Script Audit bypass does not bypass the Merge Gate. If the allrounder wants
+  work to proceed past a `NOT READY` Merge Gate, record a separate Merge Gate
+  bypass.
+
 ## Halt rules
 
 - Open `blocker` anywhere in Script Audit/Stability Run evidence → stop normal
@@ -101,14 +118,18 @@ the report is `NOT READY`.
 
 ## Procedure
 
-1. Ledger check: Script Forge, Script Audit (PASS), and Stability Run (green ×3) all `done`. Missing → run the
-   chain (/forge-scripts → /audit-scripts → /green-run) or stop and report.
+1. Ledger check: Script Forge and Stability Run (green ×3) are `done`; Script
+   Audit is either `done (PASS)` or has an exact current allrounder Script Audit
+   bypass. Missing → run the chain
+   (/forge-scripts → /audit-scripts → /green-run), record the explicit audit
+   bypass when directly instructed, or stop and report.
 2. Cross-verify the evidence (don't trust the artifacts' own summaries):
    - the configured `lintCases` command returns zero errors for the full
      approved case set;
-   - Script Audit and Stability Run evidence are feature-level, not merely a
-     scoped `SUBSET PASS`;
-   - script-audit verdict consistent with its findings;
+   - Script Audit PASS/waiver and Stability Run evidence are feature-level, not
+     merely a scoped result, unless this gate is explicitly category-scoped;
+   - script-audit verdict is consistent with its findings; when waived, the
+     waiver preserves that verdict and matches the exact stability-run manifest;
    - green-run table really shows 3 consecutive green, correct commit;
    - every approved P1 case has its architecture-appropriate independent
      evidence layers and truth strategy implemented;
@@ -135,7 +156,8 @@ the report is `NOT READY`.
    attach the updated `coverage.md`.
 5. Write `docs/qa/<feature>/audit/gate-merge.md`:
    - Evidence summary per workflow (paths, dates, key numbers)
-   - **Checklist** (✅/❌ + evidence pointer): audit PASS · green ×3 · lint +
+   - **Checklist** (✅/❌ + evidence pointer): audit PASS **or exact current
+     allrounder Script Audit bypass** · green ×3 · lint +
      typecheck + bddgen clean · approved evidence layers on P1 · traceability complete ·
      permanent `@manual` retained · generated set equals `@automated` ·
      procedural Gherkin lint clean · no subset audit/run presented as

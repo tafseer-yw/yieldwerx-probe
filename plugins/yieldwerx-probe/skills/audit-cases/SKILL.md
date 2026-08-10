@@ -1,7 +1,7 @@
 ---
 name: audit-cases
 user-invocable: true
-description: Use when designed test cases need adversarial review before the Design Gate — coverage vs spec, traceability completeness, step atomicity, negative/boundary depth, data feasibility. PROBE Case Audit stage. A named QA Lead or Automation Engineer may explicitly waive this stage through gate-design; the audit skill itself never creates or hides a waiver.
+description: Use when designed test cases need adversarial review before the Design Gate — coverage vs spec, traceability completeness, step atomicity, negative/boundary depth, data feasibility. PROBE Case Audit stage. A named QA Lead or Automation Engineer may explicitly waive this stage through /bypass-gate or gate-design; the audit skill itself never creates or hides a waiver.
 track: design
 safety: writes-local
 produces: .probe/artifacts/<feature>/30-case-audit/case-audit.md
@@ -52,7 +52,8 @@ the same context.
 
 This skill never silently skips itself. If a named QA Lead or Automation
 Engineer says to bypass Case Audit, stop this workflow and route the request to
-`/gate-design`, which records `waived — allrounder Case Audit bypass`, the
+`/bypass-gate <feature> case-audit` (or `/gate-design` while assembling that
+gate), which records `waived — allrounder Case Audit bypass`, the
 reason, missing or failed evidence, and residual risk. A bare `approved`
 statement is not an audit bypass.
 

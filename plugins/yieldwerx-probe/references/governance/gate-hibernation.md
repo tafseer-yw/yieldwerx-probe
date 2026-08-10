@@ -44,14 +44,14 @@ skill infers hibernation from anything else.
 
 ## What hibernation does
 
-| Gate behaviour | Active | Hibernated |
-| --- | --- | --- |
-| Evidence assembled | yes | **yes — unchanged** |
-| Readiness reported honestly | yes | **yes — unchanged** |
-| Missing/failed items listed | yes | **yes — unchanged** |
-| Human signature required | yes | no |
-| Blocks the next stage | yes | **no** |
-| Reported status | `READY` / `NOT READY` / `APPROVED` | `HIBERNATED — <reason>` |
+| Gate behaviour              | Active                             | Hibernated              |
+| --------------------------- | ---------------------------------- | ----------------------- |
+| Evidence assembled          | yes                                | **yes — unchanged**     |
+| Readiness reported honestly | yes                                | **yes — unchanged**     |
+| Missing/failed items listed | yes                                | **yes — unchanged**     |
+| Human signature required    | yes                                | no                      |
+| Blocks the next stage       | yes                                | **no**                  |
+| Reported status             | `READY` / `NOT READY` / `APPROVED` | `HIBERNATED — <reason>` |
 
 The gate report is still written, still committed, and still says `NOT READY`
 with its failing checklist items when that is the truth. Hibernation changes
@@ -68,8 +68,10 @@ misread this document:
    suspending the second would make the evaluation worthless — the team would
    never see PROBE catch anything.
 2. **Audits still run and still fail.** Case Audit and Script Audit produce their
-   verdicts unchanged. Hibernation does not waive an audit; `/bypass-gate` and
-   `/owner-bypass` remain the only routes for that, and they remain per-scope.
+   verdicts unchanged. Hibernation does not waive an audit; `/bypass-gate`
+   supports separate `case-audit`, `script-audit`, and `audits` scopes, while
+   `/owner-bypass` remains available for an exact owner-authorized item. Script
+   Audit waivers remain bound to the current TC and commit/file-hash manifest.
 3. **No gate is ever reported as approved.** A hibernated gate is
    `HIBERNATED`, never `APPROVED`, `PASSED`, or `SIGNED`. Anything that renders
    it as approval is falsified evidence — `blocker` under the ladder.

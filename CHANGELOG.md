@@ -2,6 +2,25 @@
 
 All notable changes to YieldWerx PROBE are recorded here.
 
+## 2.12.0 — 2026-08-10
+
+**Allrounders can now explicitly bypass Case Audit, Script Audit, or both audit
+gates without falsifying an audit PASS.** `/yw:bypass-gate` accepts
+`case-audit`, `script-audit`, and `audits` alongside its existing gate scopes.
+
+- `audits` expands to separate Case Audit and Script Audit waiver records.
+- `all` deliberately remains Design, Merge, and Ops gates only; audit and gate
+  groups never imply each other.
+- A Script Audit waiver is bound to the exact TC inventory and
+  commit/file-hash manifest. Any material script change makes it stale.
+- Stability Run and Merge Gate accept a current exact Script Audit waiver as
+  the audit prerequisite while preserving the real verdict, findings, missing
+  review, and residual risk.
+- Script Audit bypass does not bypass Merge Gate. If the assembled Merge Gate
+  is still `NOT READY`, progressing past it requires its own explicit waiver.
+- Tafseer Haider's committed allrounder identity is sufficient authority for
+  these scopes; the owner-PIN flow remains reserved for owner-only overrides.
+
 ## 2.11.0 — 2026-08-10
 
 **Gates can be hibernated for an evaluation period — without pretending they
