@@ -4,7 +4,7 @@ import path from 'node:path';
 import { spawnSync } from 'node:child_process';
 
 const root = process.cwd();
-const cli = path.join(root, 'plugins', 'yieldwerx-probe', 'bin', 'probe.mjs');
+const cli = path.join(root, 'bin', 'probe.mjs');
 const temporaryRoot = fs.mkdtempSync(path.join(os.tmpdir(), 'probe-cli-'));
 
 function run(args, cwd = root) {

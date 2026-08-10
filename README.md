@@ -70,7 +70,7 @@ The complete argument semantics, selector behavior, shared-session ownership,
 tandem recipes, artifact chains, and unsafe combinations are in the
 [skill usage and tandem guide](docs/SKILL-USAGE.md).
 
-The table below lists every public `yw:*` skill shipped by PROBE 2.9.1. The
+The table below lists every public `yw:*` skill shipped by PROBE 2.9.2. The
 repository validator compares this README with the actual skill directories and
 fails when a skill, accepted argument contract, or full 5W1H catalog entry is
 missing.
