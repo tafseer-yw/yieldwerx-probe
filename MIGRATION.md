@@ -264,3 +264,34 @@ Version 2.4 separates requirement authority from knowledge context.
    `/yw:update-cases`.
 7. Run both Spec Probe validators, `probe doctor`, and the repository's normal
    quality checks.
+
+## Upgrade from 2.13.x to 2.13.2
+
+Version 2.13.2 stops the plugin declaring a hard dependency on the
+knowledgebase. Through 2.13.1 an unsatisfied dependency left Claude Code
+disabling `yw` entirely, so every `/yw:*` command answered `Unknown command` on
+any account without `yieldwerx-knowledgebase@yieldwerx-company` installed.
+
+1. Update `yw@yieldwerx` and run `/reload-plugins`, then fully restart the app.
+2. Confirm the plugin is no longer disabled. `claude plugin list` — or the
+   `/plugin` Errors tab — must show no `dependency-unsatisfied` entry for
+   `yw@yieldwerx`, and the Skills panel must list 34 `yw` skills.
+3. Re-point the `yieldwerx-company` marketplace at its **public GitHub source**
+   if yours still resolves to the internal Azure DevOps repository. Both publish
+   the same marketplace name, so every `@yieldwerx-company` reference keeps
+   working; only reachability differs.
+
+   ```text
+   /plugin marketplace remove yieldwerx-company
+   /plugin marketplace add https://github.com/tafseer-yw/yieldwerx-knowledgebase.git
+   ```
+
+4. Install the knowledgebase only if you need product knowledge. It is now an
+   optional prerequisite, not a dependency, and only `/yw:ask-yieldwerx` and
+   `/yw:update-yieldwerx-knowledge` consult it.
+
+   ```text
+   /plugin install yieldwerx-knowledgebase@yieldwerx-company
+   ```
+
+5. Set `probeVersion: 2.13.2`.
