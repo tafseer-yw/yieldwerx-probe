@@ -668,14 +668,31 @@ Applications using the development track can start from
 Plugin-owned references stay inside the plugin; feature artifacts are always
 written into the consumer repository.
 
-The `yw` plugin depends on the separately versioned
-`yieldwerx-knowledgebase@yieldwerx-company` plugin. Public commands use
-`/yw:ask-yieldwerx` and `/yw:update-yieldwerx-knowledge`; their small adapters
-forward to the authoritative knowledge skills and do not copy product facts
-into this repository. In Spec Probe, that knowledge is context only; the
-provided requirement remains the sole requirement authority. If required
-knowledge is unavailable, the workflow records the missing context instead of
-guessing from the application.
+The `yw` plugin consumes the separately versioned
+`yieldwerx-knowledgebase@yieldwerx-company` plugin as an **optional
+prerequisite**, and deliberately declares **no** `dependencies` in its manifest.
+Install the knowledgebase separately if you need product knowledge:
+
+```text
+/plugin install yieldwerx-knowledgebase@yieldwerx-company
+```
+
+It must not be a declared dependency. An unsatisfied dependency makes Claude
+Code disable the depending plugin, and `yieldwerx-company` is an internal Azure
+DevOps marketplace that a QA workstation or a Cowork sync generally cannot
+reach. Through 2.13.1 that disabled all 34 `yw` skills for every user without
+that access — while an owner machine, where the knowledgebase happens to be
+installed, looked completely healthy. Repository validation now fails if either
+the manifest declares dependencies or the marketplace re-adds
+`allowCrossMarketplaceDependenciesOn`.
+
+Only `/yw:ask-yieldwerx` and `/yw:update-yieldwerx-knowledge` consult it. Their
+small adapters forward to the authoritative knowledge skills, do not copy product
+facts into this repository, and state plainly when the knowledgebase is missing
+or disabled rather than guessing. The other 32 skills never touch it. In Spec
+Probe, that knowledge is context only; the provided requirement remains the sole
+requirement authority. If required knowledge is unavailable, the workflow records
+the missing context instead of guessing from the application.
 See the
 [knowledge integration contract](plugins/yieldwerx-probe/references/integrations/knowledge.md).
 

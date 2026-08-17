@@ -4,7 +4,6 @@
   "owner": {
     "name": "Tafseer Haider"
   },
-  "allowCrossMarketplaceDependenciesOn": ["yieldwerx-company"],
   "renames": {
     "yieldwerx-probe": "yw"
   },
