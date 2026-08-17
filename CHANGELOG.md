@@ -4,34 +4,43 @@ All notable changes to YieldWerx PROBE are recorded here.
 
 ## 2.13.2 — 2026-08-17
 
-**Fixed the real cause of `/yw:*` answering `Unknown command`: the plugin
-declared a hard dependency on a marketplace most users cannot reach, so Claude
-Code disabled it.** This is the original defect, present since the dependency was
-introduced and unrelated to the 2.13.0 command-shim mistake.
+**Removes an unenforced hard dependency and moves the knowledgebase marketplace
+to public GitHub.** Housekeeping and a reachability fix. It does **not** fix
+`/yw:*` answering `Unknown command`; that defect remains open.
 
-`plugin.json` required `yieldwerx-knowledgebase@yieldwerx-company`. Claude Code
-disables a plugin whose declared dependency is unsatisfied
-(`dependency-unsatisfied`), and `yieldwerx-company` resolves to an internal Azure
-DevOps git URL that a QA workstation or a Cowork sync generally cannot reach. On
-any account without the knowledgebase installed, all 34 `yw` skills were
-disabled — while an owner machine, where it happens to be installed, reported
-`enabled=true` and `errors=null`. That asymmetry is why the failure never
-reproduced locally.
+`plugin.json` required `yieldwerx-knowledgebase@yieldwerx-company`. The
+documented behaviour is that Claude Code disables a plugin whose declared
+dependency is unsatisfied (`dependency-unsatisfied`), which made this a plausible
+cause of the whole plugin failing to respond to typed commands. **Direct testing
+did not support that.** With the knowledgebase uninstalled, and again with it
+merely disabled, `yw` stayed `enabled=true` with `errors=null` and the loader
+still registered all 34 skills; `claude plugin disable` on the knowledgebase
+succeeded instead of being refused as a depended-on plugin. The dependency was
+not being enforced, so removing it is hygiene, not a fix.
+
+It is still the right removal. Only `ask-yieldwerx` and
+`update-yieldwerx-knowledge` consult the knowledgebase, and both already state
+when it is missing or disabled rather than guessing. The other 32 skills never
+touch it, so a manifest dependency capable of disabling all 34 is the wrong trade.
 
 - Removed the `dependencies` array from `plugin.json`. The knowledgebase is now a
   documented **optional prerequisite**, installed separately.
 - Removed `allowCrossMarketplaceDependenciesOn` from `marketplace.json`. With no
   dependencies declared it was dead configuration, and an allowlist naming
-  `yieldwerx-company` reads as sanction for re-adding the dependency.
+  `yieldwerx-company` reads as sanction for re-adding it.
 - Repository validation now **fails if either returns**, replacing the guards
   that previously *required* both.
-- No skill changed. Only `ask-yieldwerx` and `update-yieldwerx-knowledge` consult
-  the knowledgebase, and both already state when it is missing or disabled rather
-  than guessing. The other 32 never touch it.
+- Documented the **public GitHub source** for the knowledgebase marketplace. It
+  is published to both an internal Azure DevOps repository and
+  `https://github.com/tafseer-yw/yieldwerx-knowledgebase.git`, both declaring the
+  same marketplace name, so every `@yieldwerx-company` reference resolves
+  identically — only reachability differs. Re-point steps are in `MIGRATION.md`.
+- No skill file changed.
 
-Confirm on an affected account with `claude plugin list` or the `/plugin` Errors
-tab: a `dependency-unsatisfied` entry for `yw@yieldwerx` before this release,
-none after.
+Eliminated so far as causes of `Unknown command`: the 2.13.0 command shims (which
+caused their own outage), invalid YAML in the dev-track `graph:` blocks
+(disproved by a strict YAML 1.2 parse of all 34 front-matter blocks), and this
+dependency. The host's slash-command resolver is the remaining lead.
 
 ## 2.13.1 — 2026-08-17
 
