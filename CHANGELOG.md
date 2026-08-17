@@ -2,6 +2,33 @@
 
 All notable changes to YieldWerx PROBE are recorded here.
 
+## 2.13.0 — 2026-08-17
+
+**Fixed: `/yw:*` commands returned `Unknown command` in Claude Desktop even
+though the plugin was installed and its skills were loaded.** Every public entry
+point was authored only as `skills/<name>/SKILL.md`. Claude Code resolves those
+into the `/` menu, but Claude Desktop builds its menu from a plugin's
+`commands/` directory, which the hosted payload did not have. The skills still
+loaded for model invocation and appeared in Desktop's Skills panel — so the
+plugin looked correctly installed — while every typed command failed to resolve.
+
+- Added a generated `commands/<name>.md` dispatch shim for all 34 skills. A shim
+  repeats its skill's `description` and `argument-hint` so autocomplete is
+  identical, then points at the `SKILL.md` and stops.
+- Shims carry no process of their own. Because they delegate rather than
+  duplicate, it does not matter which entry a host resolves first, and
+  `PROBE-PROCESS.md` and the skills remain the only process authority.
+- Added `npm run commands` (`scripts/generate-commands.mjs`) to regenerate the
+  shims from the skills, including removal of orphans.
+- Repository validation now fails on a missing, orphaned, or drifted shim, on a
+  shim that stops delegating or drops `$ARGUMENTS`, and on a shim that grows
+  `## Why`/`## What`/`## When`/`## Where`/`## How` process text. The validator
+  and the generator share one front-matter reader so drift cannot hide from the
+  check meant to catch it.
+- Workaround for anyone on 2.12.0 or earlier in Desktop: ask for the stage in
+  plain language ("run Spec Probe for YWPD-22226") — model invocation of the
+  skills was never affected.
+
 ## 2.12.0 — 2026-08-10
 
 **Allrounders can now explicitly bypass Case Audit, Script Audit, or both audit

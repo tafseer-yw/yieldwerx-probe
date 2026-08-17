@@ -1,6 +1,10 @@
 import fs from 'node:fs';
 import path from 'node:path';
 import process from 'node:process';
+// Shared with the generator on purpose: if the two disagreed on how a
+// front-matter line is read, drift between a skill and its shim would be
+// invisible to exactly the check meant to catch it.
+import { readFrontmatterField as readSingleLineField } from './generate-commands.mjs';
 
 const root = process.cwd();
 const pluginRoot = path.join(root, 'plugins', 'yieldwerx-probe');
@@ -354,6 +358,77 @@ for (const skill of actualSkills) {
     checkFrontmatter(skillFile, skill);
     if (devSkills.includes(skill)) {
       checkDevTrackFrontmatter(skillFile, actualSkills, knownAgentNames);
+    }
+  }
+}
+
+/**
+ * Every public skill must also ship a `commands/<skill>.md` dispatch shim.
+ *
+ * Claude Code resolves `skills/` into the `/` menu, but Claude Desktop — and
+ * Claude Code under some marketplace/config layouts — builds the menu from
+ * `commands/` alone. Without the shims the skills still load for model
+ * invocation and appear in the Skills panel, while `/yw:probe-spec` answers
+ * `Unknown command`, which is exactly how 2.12.0 shipped.
+ *
+ * A shim is dispatch only. It repeats the skill's `description` and
+ * `argument-hint` so autocomplete is identical, then points at the SKILL.md and
+ * stops. Because it carries no steps of its own, it does not matter which of the
+ * two a host resolves first — so this asserts the shim stays a shim: same
+ * description, same argument-hint, no duplicated process. Regenerate with
+ * `npm run commands`.
+ */
+const commandsRoot = path.join(pluginRoot, 'commands');
+if (!fs.existsSync(commandsRoot)) {
+  errors.push(
+    `plugins/yieldwerx-probe/commands/: missing; Claude Desktop builds its slash-command menu from this directory, so every skill needs a shim (npm run commands)`,
+  );
+} else {
+  const actualCommands = fs
+    .readdirSync(commandsRoot, { withFileTypes: true })
+    .filter((entry) => entry.isFile() && entry.name.endsWith('.md'))
+    .map((entry) => entry.name.replace(/\.md$/, ''))
+    .sort();
+  if (actualCommands.join('|') !== actualSkills.join('|')) {
+    const missing = actualSkills.filter((name) => !actualCommands.includes(name));
+    const extra = actualCommands.filter((name) => !actualSkills.includes(name));
+    errors.push(
+      `commands/ must contain exactly one shim per skill (npm run commands)${
+        missing.length ? `; missing: ${missing.join(', ')}` : ''
+      }${extra.length ? `; orphaned: ${extra.join(', ')}` : ''}`,
+    );
+  }
+  for (const command of actualCommands) {
+    const commandPath = `plugins/yieldwerx-probe/commands/${command}.md`;
+    const content = fs.readFileSync(path.join(commandsRoot, `${command}.md`), 'utf8');
+    const skillPath = path.join(skillsRoot, command, 'SKILL.md');
+    if (!content.includes(`\${CLAUDE_PLUGIN_ROOT}/skills/${command}/SKILL.md`)) {
+      errors.push(`${commandPath}: must delegate to its own skill's SKILL.md`);
+    }
+    if (!content.includes('$ARGUMENTS')) {
+      errors.push(`${commandPath}: must forward $ARGUMENTS to the skill`);
+    }
+    if (/^## (Why|What|When|Where|How)$/m.test(content)) {
+      errors.push(
+        `${commandPath}: must not restate the skill's process; a shim delegates and adds nothing`,
+      );
+    }
+    if (content.length > 1200) {
+      errors.push(
+        `${commandPath}: shim is ${content.length} chars; dispatch only, keep it under 1200`,
+      );
+    }
+    if (fs.existsSync(skillPath)) {
+      const skillSource = fs.readFileSync(skillPath, 'utf8');
+      for (const field of ['description', 'argument-hint']) {
+        const fromSkill = readSingleLineField(skillSource, field);
+        const fromCommand = readSingleLineField(content, field);
+        if (fromSkill !== fromCommand) {
+          errors.push(
+            `${commandPath}: ${field} drifted from skills/${command}/SKILL.md (npm run commands)`,
+          );
+        }
+      }
     }
   }
 }
