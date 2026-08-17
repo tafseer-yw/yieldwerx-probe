@@ -2,7 +2,43 @@
 
 All notable changes to YieldWerx PROBE are recorded here.
 
-## 2.13.0 — 2026-08-17
+## 2.13.1 — 2026-08-17
+
+**Reverts 2.13.0. That release stopped the plugin from registering anything at
+all in Claude Desktop — no skills and no commands.** Anyone who synced 2.13.0
+must update to 2.13.1.
+
+2.13.0 added a `commands/<name>.md` dispatch shim per skill, on the theory that
+Claude Code builds the `/` menu from `skills/` while Claude Desktop builds it
+from `commands/`. The theory was wrong. The loader merges both directories into
+a single registry:
+
+- `claude plugin details yw@yieldwerx` reported **68 skills for 34 entry
+  points** — every name registered twice, once from each directory. The
+  duplicate-name collision took the whole plugin's registration down in Desktop.
+- Always-on context grew from ~5,478 to ~9,570 tokens, a 75% increase charged to
+  every session.
+
+- Removed `plugins/yieldwerx-probe/commands/` and
+  `scripts/generate-commands.mjs`, and dropped the `npm run commands` script.
+- Repository validation now **fails if a `commands/` directory reappears**,
+  carrying the reason, so the idea cannot be retried as though untested.
+- `skills/` alone is the correct layout. Verify any change with
+  `claude plugin details yw@yieldwerx` and confirm the skill count matches the
+  number of directories under `skills/`.
+
+Ruled out while diagnosing: the `?`-suffixed optional entries in the dev-track
+`graph:` flow sequences (`artifact:10-spec/spec-analysis.md?`) were reported as
+invalid YAML. They are not. All 34 `SKILL.md` front-matter blocks parse cleanly
+under a strict YAML 1.2 parser, and the `?` entries parse as the intended plain
+string scalars. No skill front-matter was changed.
+
+The original complaint — `/yw:*` typed in Claude Desktop answering
+`Unknown command` — is **not fixed by this release** and is back to being open.
+Skill invocation works, so asking for a stage in plain language ("run Spec Probe
+for YWPD-22226") remains the reliable path in Desktop.
+
+## 2.13.0 — 2026-08-17 — BROKEN, DO NOT USE
 
 **Fixed: `/yw:*` commands returned `Unknown command` in Claude Desktop even
 though the plugin was installed and its skills were loaded.** Every public entry
