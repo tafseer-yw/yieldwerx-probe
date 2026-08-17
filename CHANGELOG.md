@@ -2,6 +2,37 @@
 
 All notable changes to YieldWerx PROBE are recorded here.
 
+## 2.13.2 — 2026-08-17
+
+**Fixed the real cause of `/yw:*` answering `Unknown command`: the plugin
+declared a hard dependency on a marketplace most users cannot reach, so Claude
+Code disabled it.** This is the original defect, present since the dependency was
+introduced and unrelated to the 2.13.0 command-shim mistake.
+
+`plugin.json` required `yieldwerx-knowledgebase@yieldwerx-company`. Claude Code
+disables a plugin whose declared dependency is unsatisfied
+(`dependency-unsatisfied`), and `yieldwerx-company` resolves to an internal Azure
+DevOps git URL that a QA workstation or a Cowork sync generally cannot reach. On
+any account without the knowledgebase installed, all 34 `yw` skills were
+disabled — while an owner machine, where it happens to be installed, reported
+`enabled=true` and `errors=null`. That asymmetry is why the failure never
+reproduced locally.
+
+- Removed the `dependencies` array from `plugin.json`. The knowledgebase is now a
+  documented **optional prerequisite**, installed separately.
+- Removed `allowCrossMarketplaceDependenciesOn` from `marketplace.json`. With no
+  dependencies declared it was dead configuration, and an allowlist naming
+  `yieldwerx-company` reads as sanction for re-adding the dependency.
+- Repository validation now **fails if either returns**, replacing the guards
+  that previously *required* both.
+- No skill changed. Only `ask-yieldwerx` and `update-yieldwerx-knowledge` consult
+  the knowledgebase, and both already state when it is missing or disabled rather
+  than guessing. The other 32 never touch it.
+
+Confirm on an affected account with `claude plugin list` or the `/plugin` Errors
+tab: a `dependency-unsatisfied` entry for `yw@yieldwerx` before this release,
+none after.
+
 ## 2.13.1 — 2026-08-17
 
 **Reverts 2.13.0. That release stopped the plugin from registering anything at

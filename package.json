@@ -1,6 +1,6 @@
 {
   "name": "@yieldwerx/probe-cli",
-  "version": "2.13.1",
+  "version": "2.13.2",
   "private": false,
   "description": "Source, validation and distribution repository for the YieldWerx PROBE process.",
   "author": {
