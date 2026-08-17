@@ -266,8 +266,13 @@ if (marketplace.name !== 'yieldwerx') {
 if (marketplace.owner?.name !== 'Tafseer Haider') {
   errors.push(`marketplace owner must be Tafseer Haider`);
 }
-if (!marketplace.allowCrossMarketplaceDependenciesOn?.includes('yieldwerx-company')) {
-  errors.push(`marketplace must allow the yieldwerx-company dependency`);
+// Dead once the plugin declares no dependencies, and worse than dead: an
+// allowlist naming yieldwerx-company reads as sanction for re-adding the
+// dependency that disabled the plugin for every user who cannot reach it.
+if (marketplace.allowCrossMarketplaceDependenciesOn !== undefined) {
+  errors.push(
+    `marketplace must not allow cross-marketplace dependencies; the plugin declares none by design`,
+  );
 }
 if (marketplace.renames?.['yieldwerx-probe'] !== 'yw') {
   errors.push(`marketplace must migrate 'yieldwerx-probe' to 'yw'`);
@@ -287,13 +292,25 @@ if (manifest.name !== 'yw') {
 if (manifest.displayName !== 'yieldWerx PROBE') {
   errors.push(`plugin displayName must be 'yieldWerx PROBE'`);
 }
-const knowledgeDependency = manifest.dependencies?.find(
-  (dependency) =>
-    dependency?.name === 'yieldwerx-knowledgebase' &&
-    dependency?.marketplace === 'yieldwerx-company',
-);
-if (!knowledgeDependency) {
-  errors.push(`plugin manifest must depend on yieldwerx-knowledgebase@yieldwerx-company`);
+/**
+ * The plugin must NOT declare a hard dependency on the knowledgebase.
+ *
+ * Through 2.13.1 the manifest required `yieldwerx-knowledgebase@yieldwerx-company`.
+ * An unsatisfied dependency makes Claude Code disable the depending plugin
+ * (`dependency-unsatisfied`), and that marketplace is an internal Azure DevOps
+ * URL a QA workstation or a Cowork sync generally cannot reach. The result was
+ * all 34 skills disabled on any account without the knowledgebase, while the
+ * owner's machine — where it happens to be installed — looked perfectly healthy.
+ *
+ * Only ask-yieldwerx and update-yieldwerx-knowledge consult it, and both already
+ * report the knowledgebase as missing or disabled instead of guessing. The
+ * knowledgebase is a documented optional prerequisite, never an install gate on
+ * the other 32 skills.
+ */
+if (manifest.dependencies !== undefined) {
+  errors.push(
+    `plugin manifest must not declare dependencies; an unsatisfiable knowledgebase dependency disabled all ${expectedSkills.length} skills for every user without internal Azure DevOps access through 2.13.1`,
+  );
 }
 if (!/^\d+\.\d+\.\d+$/.test(manifest.version ?? '')) {
   errors.push(`plugin manifest version must be semantic major.minor.patch`);
