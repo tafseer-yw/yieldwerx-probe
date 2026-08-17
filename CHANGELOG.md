@@ -29,7 +29,7 @@ touch it, so a manifest dependency capable of disabling all 34 is the wrong trad
   dependencies declared it was dead configuration, and an allowlist naming
   `yieldwerx-company` reads as sanction for re-adding it.
 - Repository validation now **fails if either returns**, replacing the guards
-  that previously *required* both.
+  that previously _required_ both.
 - Documented the **public GitHub source** for the knowledgebase marketplace. It
   is published to both an internal Azure DevOps repository and
   `https://github.com/tafseer-yw/yieldwerx-knowledgebase.git`, both declaring the
