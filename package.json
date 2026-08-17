@@ -1,6 +1,6 @@
 {
   "name": "@yieldwerx/probe-cli",
-  "version": "2.13.0",
+  "version": "2.13.1",
   "private": false,
   "description": "Source, validation and distribution repository for the YieldWerx PROBE process.",
   "author": {
@@ -22,7 +22,6 @@
     "LICENSE.md"
   ],
   "scripts": {
-    "commands": "node scripts/generate-commands.mjs",
     "validate": "node scripts/validate-repository.mjs",
     "validate:spec": "node plugins/yieldwerx-probe/skills/probe-spec/scripts/validate-spec-analysis.mjs",
     "validate:reconciliation": "node plugins/yieldwerx-probe/skills/probe-spec/scripts/validate-spec-reconciliation.mjs",
