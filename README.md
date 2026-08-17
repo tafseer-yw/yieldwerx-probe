@@ -674,16 +674,23 @@ prerequisite**, and deliberately declares **no** `dependencies` in its manifest.
 Install the knowledgebase separately if you need product knowledge:
 
 ```text
+/plugin marketplace add https://github.com/tafseer-yw/yieldwerx-knowledgebase.git
 /plugin install yieldwerx-knowledgebase@yieldwerx-company
 ```
 
-It must not be a declared dependency. An unsatisfied dependency makes Claude
-Code disable the depending plugin, and `yieldwerx-company` is an internal Azure
-DevOps marketplace that a QA workstation or a Cowork sync generally cannot
-reach. Through 2.13.1 that disabled all 34 `yw` skills for every user without
-that access — while an owner machine, where the knowledgebase happens to be
-installed, looked completely healthy. Repository validation now fails if either
-the manifest declares dependencies or the marketplace re-adds
+Add it from the **public GitHub source above**. The same marketplace is also
+published to an internal Azure DevOps repository; do not use that one. It
+requires VPN and Azure DevOps credentials, so a QA workstation or a Cowork sync
+generally cannot reach it. Both sources declare the same marketplace name
+(`yieldwerx-company`), so every `@yieldwerx-company` reference resolves
+identically either way — only reachability differs.
+
+It must not be a declared dependency. Claude Code disables a plugin whose
+declared dependency is unsatisfied, and a dependency in a marketplace the user
+has not added is left unresolved. Through 2.13.1 that disabled all 34 `yw`
+skills for every user without the knowledgebase — while an owner machine, where
+it happens to be installed, looked completely healthy. Repository validation now
+fails if either the manifest declares dependencies or the marketplace re-adds
 `allowCrossMarketplaceDependenciesOn`.
 
 Only `/yw:ask-yieldwerx` and `/yw:update-yieldwerx-knowledge` consult it. Their
