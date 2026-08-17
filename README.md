@@ -641,20 +641,22 @@ Installed commands are namespaced, for example:
 All 34 `yw:*` skills are explicitly user-invocable and appear in the
 slash-command menu. Repository validation fails if a public skill is hidden.
 
-### How the two entry points relate
+### One entry point per skill
 
-Each public entry point is authored once, as `skills/<name>/SKILL.md`, and ships
-with a generated `commands/<name>.md` dispatch shim. Claude Code builds the `/`
-menu from `skills/`; Claude Desktop builds it from `commands/`. Shipping both is
-what makes `/yw:probe-spec` resolve on either host instead of loading the skill
-for model invocation only and answering `Unknown command` when typed.
+Each public entry point is authored exactly once, as `skills/<name>/SKILL.md`.
+The plugin deliberately ships **no** `commands/` directory, and repository
+validation fails if one appears.
 
-A shim repeats its skill's `description` and `argument-hint` and then points at
-the `SKILL.md`. It carries no process of its own, so whichever entry a host
-resolves first, the behaviour is the same. Regenerate the shims with
-`npm run commands` after adding, renaming, or re-describing a skill;
-`npm run validate` fails when a shim is missing, orphaned, drifted, or has grown
-process text.
+2.13.0 briefly added a `commands/<name>.md` shim per skill, on the theory that
+Claude Desktop builds its `/` menu from `commands/` while Claude Code uses
+`skills/`. That theory is wrong: the loader merges both directories into one
+registry, so shipping both registered all 34 names twice and the collision
+stopped the plugin from registering anything at all in Claude Desktop — no
+skills and no commands. It also added roughly 4,100 always-on tokens to every
+session. 2.13.1 reverted it.
+
+Verify any layout change with `claude plugin details yw@yieldwerx` and confirm
+the reported skill count equals the number of directories under `skills/`.
 
 ## Consumer contract
 
