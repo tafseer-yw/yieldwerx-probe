@@ -617,7 +617,7 @@ Substantive case changes are routed to `/yw:update-cases`.
   scan for what must never be committed, run the hygiene set, create only the
   requested local outputs, and stop at the boundary of any outward action.
 
-## Install in Claude Code
+## Install in Claude Code or Claude Desktop
 
 Add the public GitHub marketplace:
 
@@ -638,8 +638,23 @@ Installed commands are namespaced, for example:
 /yw:update-yieldwerx-knowledge
 ```
 
-All 34 `yw:*` skills are explicitly user-invocable and appear in Claude Code's
+All 34 `yw:*` skills are explicitly user-invocable and appear in the
 slash-command menu. Repository validation fails if a public skill is hidden.
+
+### How the two entry points relate
+
+Each public entry point is authored once, as `skills/<name>/SKILL.md`, and ships
+with a generated `commands/<name>.md` dispatch shim. Claude Code builds the `/`
+menu from `skills/`; Claude Desktop builds it from `commands/`. Shipping both is
+what makes `/yw:probe-spec` resolve on either host instead of loading the skill
+for model invocation only and answering `Unknown command` when typed.
+
+A shim repeats its skill's `description` and `argument-hint` and then points at
+the `SKILL.md`. It carries no process of its own, so whichever entry a host
+resolves first, the behaviour is the same. Regenerate the shims with
+`npm run commands` after adding, renaming, or re-describing a skill;
+`npm run validate` fails when a shim is missing, orphaned, drifted, or has grown
+process text.
 
 ## Consumer contract
 
