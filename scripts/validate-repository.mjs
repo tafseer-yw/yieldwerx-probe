@@ -1038,6 +1038,81 @@ for (const expectedLine of [
   }
 }
 
+// --- process documentation covers the payload --------------------------------
+// The README and docs/SKILL-USAGE.md are already pinned to full skill
+// coverage. The process documents were not, and had silently fallen behind:
+// forge-api-tests and forge-performance-tests shipped in 2.8 and
+// update-yieldwerx-knowledge later, and none of the three appeared in ANY
+// process document - so the authority described a pipeline the payload no
+// longer matched.
+//
+// Coverage is checked across the process directory as a whole, not per file,
+// on purpose: the dev-track skills are gate-independent and are documented in
+// DEV-TRACK.md rather than the stage playbook, which is correct. What must
+// never happen is a skill that ships and is described nowhere.
+{
+  const processDir = path.join(root, 'plugins/yieldwerx-probe/references/process');
+  const processText = fs
+    .readdirSync(processDir)
+    .filter((f) => f.endsWith('.md'))
+    .map((f) => fs.readFileSync(path.join(processDir, f), 'utf8'))
+    .join('\n');
+  for (const skill of actualSkills) {
+    if (!processText.includes(skill)) {
+      errors.push(
+        `references/process: no process document mentions '${skill}' - it ships and is described nowhere`,
+      );
+    }
+  }
+}
+
+// --- shipped guards ---------------------------------------------------------
+// The guards are enforcement, so absence is not a style problem: a declared
+// guard that does not ship reads exactly like a guard that works.
+//
+// liveAioWrite / --live : the AIO adapter writes to a production Jira tenant,
+//   and PROBE is dry-run by default - so --live is the only signal a write is
+//   real, and keying on anything else fires on every harmless dry run.
+// stripProsePayloads    : a commit message QUOTING a dangerous command is
+//   prose; without this, `commit -am` describing a force push was denied as one.
+// -d\b                  : three spellings delete a remote branch - --delete,
+//   the -d shorthand, and the empty-source refspec.
+// TOKEN|                : AIO_API_TOKEN on a command line is a credential and
+//   must be redacted before the command is quoted back.
+requireContent('plugins/yieldwerx-probe/scripts/lib/guards/blast-radius.mjs', [
+  'liveAioWrite',
+  '--live',
+  'stripProsePayloads',
+  '-d\\b',
+  'TOKEN|',
+]);
+
+// A hook inherits the host environment, so an env prefix typed into a COMMAND
+// never reaches process.env; without this the advertised override cannot work.
+requireContent('plugins/yieldwerx-probe/scripts/guards/bash-guard.mjs', ['OVERRIDE_PREFIX']);
+
+// A verdict written anywhere but stdout never reaches the model.
+requireContent('plugins/yieldwerx-probe/scripts/lib/guards/hook-io.mjs', ['permissionDecision']);
+
+// Every path the hooks manifest names must actually ship.
+{
+  const hooksPath = path.join(root, 'plugins/yieldwerx-probe/hooks/hooks.json');
+  if (!fs.existsSync(hooksPath)) {
+    errors.push('plugins/yieldwerx-probe/hooks/hooks.json is missing - the guards are declared nowhere');
+  } else {
+    const declaredHooks = JSON.parse(fs.readFileSync(hooksPath, 'utf8'));
+    for (const group of Object.values(declaredHooks.hooks ?? {}).flat()) {
+      for (const hook of group.hooks ?? []) {
+        for (const m of String(hook.command ?? '').matchAll(/\$\{CLAUDE_PLUGIN_ROOT\}\/([^"'\s]+)/g)) {
+          if (!fs.existsSync(path.join(root, 'plugins/yieldwerx-probe', m[1]))) {
+            errors.push(`hooks.json names ${m[1]}, which does not ship`);
+          }
+        }
+      }
+    }
+  }
+}
+
 if (errors.length > 0) {
   process.stderr.write(`PROBE repository validation failed (${errors.length}):\n`);
   for (const error of errors) process.stderr.write(`- ${error}\n`);
