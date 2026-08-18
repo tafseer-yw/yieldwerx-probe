@@ -1038,6 +1038,34 @@ for (const expectedLine of [
   }
 }
 
+// --- process documentation covers the payload --------------------------------
+// The README and docs/SKILL-USAGE.md are already pinned to full skill
+// coverage. The process documents were not, and had silently fallen behind:
+// forge-api-tests and forge-performance-tests shipped in 2.8 and
+// update-yieldwerx-knowledge later, and none of the three appeared in ANY
+// process document - so the authority described a pipeline the payload no
+// longer matched.
+//
+// Coverage is checked across the process directory as a whole, not per file,
+// on purpose: the dev-track skills are gate-independent and are documented in
+// DEV-TRACK.md rather than the stage playbook, which is correct. What must
+// never happen is a skill that ships and is described nowhere.
+{
+  const processDir = path.join(root, 'plugins/yieldwerx-probe/references/process');
+  const processText = fs
+    .readdirSync(processDir)
+    .filter((f) => f.endsWith('.md'))
+    .map((f) => fs.readFileSync(path.join(processDir, f), 'utf8'))
+    .join('\n');
+  for (const skill of actualSkills) {
+    if (!processText.includes(skill)) {
+      errors.push(
+        `references/process: no process document mentions '${skill}' - it ships and is described nowhere`,
+      );
+    }
+  }
+}
+
 // --- shipped guards ---------------------------------------------------------
 // The guards are enforcement, so absence is not a style problem: a declared
 // guard that does not ship reads exactly like a guard that works.
