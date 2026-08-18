@@ -18,7 +18,10 @@ import {
   targetBranches,
   redact,
 } from '../plugins/yieldwerx-probe/scripts/lib/guards/blast-radius.mjs';
-import { scanContent, secretPathRule } from '../plugins/yieldwerx-probe/scripts/lib/guards/secrets.mjs';
+import {
+  scanContent,
+  secretPathRule,
+} from '../plugins/yieldwerx-probe/scripts/lib/guards/secrets.mjs';
 import { evaluate as evaluateBash } from '../plugins/yieldwerx-probe/scripts/guards/bash-guard.mjs';
 import { evaluate as evaluateWrite } from '../plugins/yieldwerx-probe/scripts/guards/write-guard.mjs';
 import { emitDecision, mask } from '../plugins/yieldwerx-probe/scripts/lib/guards/hook-io.mjs';
@@ -40,7 +43,11 @@ const G = 'git ';
 // --- live AIO writes: the reason this guard exists here ---------------------
 
 check('a live AIO sync asks - it writes to the production Jira tenant', () => {
-  for (const c of ['probe aio sync wafer-map --live', 'npm run sync:cases -- --live', 'node aio-sync.ts --live']) {
+  for (const c of [
+    'probe aio sync wafer-map --live',
+    'npm run sync:cases -- --live',
+    'node aio-sync.ts --live',
+  ]) {
     assert.equal(verdictOf(c), 'ask', c);
   }
 });
@@ -52,7 +59,13 @@ check('the ask names the real risk', () => {
 });
 
 check('a dry run is silent - PROBE is dry-run by default and that is the design', () => {
-  for (const c of ['probe aio sync wafer-map', 'npm run sync:cases', 'probe aio check', 'probe aio whoami', 'probe aio folders']) {
+  for (const c of [
+    'probe aio sync wafer-map',
+    'npm run sync:cases',
+    'probe aio check',
+    'probe aio whoami',
+    'probe aio folders',
+  ]) {
     assert.equal(verdictOf(c), null, c);
   }
 });
@@ -81,13 +94,29 @@ check('history rewrites and shared-ref deletion are denied', () => {
 });
 
 check('working-tree destroyers ask', () => {
-  for (const c of [`${G}reset --hard`, `${G}clean -fd`, `${G}clean --force`, `${G}checkout .`, `${G}branch -D old`, `${G}stash drop`, `${G}push --force-with-lease origin feat`]) {
+  for (const c of [
+    `${G}reset --hard`,
+    `${G}clean -fd`,
+    `${G}clean --force`,
+    `${G}checkout .`,
+    `${G}branch -D old`,
+    `${G}stash drop`,
+    `${G}push --force-with-lease origin feat`,
+  ]) {
     assert.equal(verdictOf(c), 'ask', c);
   }
 });
 
 check('ordinary work is silent', () => {
-  for (const c of [`${G}status`, `${G}push origin feat/x`, `${G}commit -m 'fix: thing'`, `${G}log --oneline`, `${G}diff`, 'npm test', 'probe doctor']) {
+  for (const c of [
+    `${G}status`,
+    `${G}push origin feat/x`,
+    `${G}commit -m 'fix: thing'`,
+    `${G}log --oneline`,
+    `${G}diff`,
+    'npm test',
+    'probe doctor',
+  ]) {
     assert.equal(verdictOf(c), null, c);
   }
 });
@@ -113,7 +142,11 @@ check('real credential shapes are found and masked', () => {
 });
 
 check('placeholders and env indirection are not credentials', () => {
-  for (const line of ['password: "your_password_here"', 'token: process.env.AIO_API_TOKEN', 'password: "${DB_PASSWORD}"']) {
+  for (const line of [
+    'password: "your_password_here"',
+    'token: process.env.AIO_API_TOKEN',
+    'password: "${DB_PASSWORD}"',
+  ]) {
     assert.deepEqual(scanContent(line), [], line);
   }
 });
@@ -129,8 +162,16 @@ check('overrides are honoured, and only the matching one', () => {
   const cmd = { tool_input: { command: `${G}push --force origin main` } };
   assert.equal(evaluateBash(cmd, { PROBE_ALLOW_UNSAFE_GIT: '1' }), null);
   assert.equal(evaluateBash(cmd, {}).decision, 'deny');
-  assert.equal(evaluateBash({ tool_input: { command: `PROBE_ALLOW_UNSAFE_GIT=1 ${G}push --force origin main` } }, {}), null);
-  const write = { tool_input: { file_path: '/r/x.ts', content: 'const k = "AKIA2E0ZTRPQHV4XN9WB"' } };
+  assert.equal(
+    evaluateBash(
+      { tool_input: { command: `PROBE_ALLOW_UNSAFE_GIT=1 ${G}push --force origin main` } },
+      {},
+    ),
+    null,
+  );
+  const write = {
+    tool_input: { file_path: '/r/x.ts', content: 'const k = "AKIA2E0ZTRPQHV4XN9WB"' },
+  };
   assert.equal(evaluateWrite(write, {}).decision, 'deny');
   assert.equal(evaluateWrite(write, { PROBE_ALLOW_SECRET_WRITE: '1' }), null);
 });

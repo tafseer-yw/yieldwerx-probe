@@ -38,6 +38,7 @@
 import fs from 'node:fs';
 import path from 'node:path';
 import { authHeader, checkConnectivity, loadConfig, type SyncConfig } from './aio-lib.ts';
+import { pathToFileURL } from 'node:url';
 
 const REPO_ROOT = process.cwd();
 
@@ -484,7 +485,7 @@ function resolveRequirement(cfg: SyncConfig, slug: string): Requirement {
 }
 
 /** Map framework scenario tags → AIO tag labels (drop lifecycle/candidacy noise). */
-function aioTags(cfg: SyncConfig, scenario: Scenario): string[] {
+export function aioTags(cfg: SyncConfig, scenario: Scenario): string[] {
   const keep = scenario.tags
     .filter((t) =>
       // `sanity` belongs here with smoke/regression: the three form a nested
@@ -552,7 +553,7 @@ function aioTypeName(cfg: SyncConfig, scenario: Scenario): string | undefined {
   return (level ? map[level] : undefined) ?? cfg.defaults.type ?? undefined;
 }
 
-function aioType(cfg: SyncConfig, scenario: Scenario): { name: string } | undefined {
+export function aioType(cfg: SyncConfig, scenario: Scenario): { name: string } | undefined {
   const name = aioTypeName(cfg, scenario);
   return name ? { name } : undefined;
 }
@@ -695,7 +696,7 @@ async function resolveTagIds(
  * sent it. Read back with `?fetchDataSets=true` (scripts/aio-verify-sync.ts);
  * a 200 from this API is not evidence the data landed.
  */
-function aioDatasets(scenario: Scenario): {
+export function aioDatasets(scenario: Scenario): {
   datasetParameters?: Array<{ name: string }>;
   dataSets?: Array<Record<string, string>>;
 } {
@@ -777,11 +778,11 @@ export function writableCaseDetails(value: Record<string, unknown>): Record<stri
  * this". Spreading such a payload over a fetched case would overwrite real
  * values with `undefined` and clear them — the opposite of the intent.
  */
-function definedOnly(value: Record<string, unknown>): Record<string, unknown> {
+export function definedOnly(value: Record<string, unknown>): Record<string, unknown> {
   return Object.fromEntries(Object.entries(value).filter(([, v]) => v !== undefined));
 }
 
-function buildCasePayload(
+export function buildCasePayload(
   cfg: SyncConfig,
   slug: string,
   scenario: Scenario,
@@ -833,7 +834,7 @@ function buildCasePayload(
 }
 
 /** Map a Gherkin keyword to the AIO BDD step type. */
-function bddStepType(keyword: string): string {
+export function bddStepType(keyword: string): string {
   switch (keyword.trim().toLowerCase()) {
     case 'given':
       return 'BDD_GIVEN';
@@ -1231,7 +1232,17 @@ async function main(): Promise<void> {
   );
 }
 
-void main().catch((err: unknown) => {
-  process.stderr.write(`aio-sync failed: ${err instanceof Error ? err.message : String(err)}\n`);
-  process.exitCode = 1;
-});
+// Run only when invoked as the entry point. bin/probe.mjs spawns this with
+// spawnSync(process.execPath, [script, ...args]), so argv[1] is this file and
+// the CLI is unaffected - but the payload builders above can now be imported
+// and asserted directly, instead of being verified by grepping the source for
+// strings.
+//
+// pathToFileURL, not string concatenation: on Windows `file://` + `E:/...`
+// does not equal import.meta.url and main() would never run.
+if (process.argv[1] && import.meta.url === pathToFileURL(process.argv[1]).href) {
+  void main().catch((err: unknown) => {
+    process.stderr.write(`aio-sync failed: ${err instanceof Error ? err.message : String(err)}\n`);
+    process.exitCode = 1;
+  });
+}

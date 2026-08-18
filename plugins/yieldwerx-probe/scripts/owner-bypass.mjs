@@ -134,10 +134,7 @@ export function validateReceipt(receipt, now = new Date(), signingKey) {
   if (receipt.secretIncluded !== false) errors.push('receipt must never contain a secret');
   const expectedSignature = signatureFor(receipt, signingKey);
   const suppliedSignature = receipt.signature;
-  if (
-    typeof suppliedSignature !== 'string' ||
-    !pinsMatch(expectedSignature, suppliedSignature)
-  ) {
+  if (typeof suppliedSignature !== 'string' || !pinsMatch(expectedSignature, suppliedSignature)) {
     errors.push('receipt signature check failed');
   }
   if (receipt.status !== 'active') errors.push(`receipt is ${receipt.status ?? 'not active'}`);
@@ -322,13 +319,17 @@ async function main() {
     requireSigningKey(signingKey);
     const candidate = await readHiddenPin();
     if (!pinsMatch(expectedPin, candidate)) throw new Error('Authorization failed.');
-    const receipt = createReceipt({
-      featureSlug,
-      item: options.item,
-      scope: options.scope,
-      reason: options.reason,
-      ttlMinutes: options['ttl-minutes'] ?? DEFAULT_TTL_MINUTES,
-    }, new Date(), signingKey);
+    const receipt = createReceipt(
+      {
+        featureSlug,
+        item: options.item,
+        scope: options.scope,
+        reason: options.reason,
+        ttlMinutes: options['ttl-minutes'] ?? DEFAULT_TTL_MINUTES,
+      },
+      new Date(),
+      signingKey,
+    );
     const directory = path.join(root, '.probe', 'authorizations', featureSlug);
     fs.mkdirSync(directory, { recursive: true });
     const receiptPath = path.join(directory, `${receipt.authorizationId}.json`);

@@ -22,7 +22,7 @@ export async function readHookPayload(stream) {
     const chunks = [];
     for await (const c of stream) chunks.push(c);
     if (!chunks.length) return null;
-    const text = Buffer.concat(chunks).toString("utf8").trim();
+    const text = Buffer.concat(chunks).toString('utf8').trim();
     return text ? JSON.parse(text) : null;
   } catch {
     // A parse failure is not this guard's finding to report, and blocking an
@@ -35,11 +35,11 @@ export async function readHookPayload(stream) {
 export function mergeVerdicts(verdicts) {
   const real = verdicts.filter(Boolean);
   if (!real.length) return null;
-  const decision = real.reduce((a, v) => (RANK[v.decision] > RANK[a] ? v.decision : a), "allow");
-  if (decision === "allow") return null;
+  const decision = real.reduce((a, v) => (RANK[v.decision] > RANK[a] ? v.decision : a), 'allow');
+  if (decision === 'allow') return null;
   return {
     decision,
-    reason: real.map((v) => v.reason).join("\n\n"),
+    reason: real.map((v) => v.reason).join('\n\n'),
     findings: real.flatMap((v) => v.findings ?? []),
   };
 }
@@ -50,14 +50,14 @@ export function emitDecision(verdict, { write = (s) => process.stdout.write(s) }
   write(
     JSON.stringify({
       hookSpecificOutput: {
-        hookEventName: "PreToolUse",
+        hookEventName: 'PreToolUse',
         permissionDecision: verdict.decision,
         permissionDecisionReason: verdict.reason,
       },
       systemMessage:
-        verdict.decision === "deny"
-          ? "PROBE guard blocked this - see the reason."
-          : "PROBE guard wants the decision before this proceeds.",
+        verdict.decision === 'deny'
+          ? 'PROBE guard blocked this - see the reason.'
+          : 'PROBE guard wants the decision before this proceeds.',
     }),
   );
   return true;
@@ -71,11 +71,11 @@ export function emitDecision(verdict, { write = (s) => process.stdout.write(s) }
  */
 export function mask(value) {
   const s = String(value);
-  if (s.length <= 8) return "*".repeat(s.length);
-  return `${s.slice(0, 2)}${"*".repeat(Math.min(s.length - 4, 24))}${s.slice(-2)}`;
+  if (s.length <= 8) return '*'.repeat(s.length);
+  return `${s.slice(0, 2)}${'*'.repeat(Math.min(s.length - 4, 24))}${s.slice(-2)}`;
 }
 
 /** Is the named override set in the environment? */
 export function overridden(name, env = process.env) {
-  return env[name] === "1" || env[name] === "true";
+  return env[name] === '1' || env[name] === 'true';
 }

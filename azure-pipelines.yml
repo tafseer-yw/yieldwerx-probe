@@ -20,6 +20,9 @@ steps:
       versionSpec: "22.x"
     displayName: Use Node.js 22
 
+  - script: npm run format:check
+    displayName: Check formatting
+
   - script: npm test
     displayName: Validate PROBE repository
 

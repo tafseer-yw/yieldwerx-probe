@@ -1098,12 +1098,16 @@ requireContent('plugins/yieldwerx-probe/scripts/lib/guards/hook-io.mjs', ['permi
 {
   const hooksPath = path.join(root, 'plugins/yieldwerx-probe/hooks/hooks.json');
   if (!fs.existsSync(hooksPath)) {
-    errors.push('plugins/yieldwerx-probe/hooks/hooks.json is missing - the guards are declared nowhere');
+    errors.push(
+      'plugins/yieldwerx-probe/hooks/hooks.json is missing - the guards are declared nowhere',
+    );
   } else {
     const declaredHooks = JSON.parse(fs.readFileSync(hooksPath, 'utf8'));
     for (const group of Object.values(declaredHooks.hooks ?? {}).flat()) {
       for (const hook of group.hooks ?? []) {
-        for (const m of String(hook.command ?? '').matchAll(/\$\{CLAUDE_PLUGIN_ROOT\}\/([^"'\s]+)/g)) {
+        for (const m of String(hook.command ?? '').matchAll(
+          /\$\{CLAUDE_PLUGIN_ROOT\}\/([^"'\s]+)/g,
+        )) {
           if (!fs.existsSync(path.join(root, 'plugins/yieldwerx-probe', m[1]))) {
             errors.push(`hooks.json names ${m[1]}, which does not ship`);
           }
