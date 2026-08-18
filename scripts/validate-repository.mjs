@@ -1038,6 +1038,53 @@ for (const expectedLine of [
   }
 }
 
+// --- shipped guards ---------------------------------------------------------
+// The guards are enforcement, so absence is not a style problem: a declared
+// guard that does not ship reads exactly like a guard that works.
+//
+// liveAioWrite / --live : the AIO adapter writes to a production Jira tenant,
+//   and PROBE is dry-run by default - so --live is the only signal a write is
+//   real, and keying on anything else fires on every harmless dry run.
+// stripProsePayloads    : a commit message QUOTING a dangerous command is
+//   prose; without this, `commit -am` describing a force push was denied as one.
+// -d\b                  : three spellings delete a remote branch - --delete,
+//   the -d shorthand, and the empty-source refspec.
+// TOKEN|                : AIO_API_TOKEN on a command line is a credential and
+//   must be redacted before the command is quoted back.
+requireContent('plugins/yieldwerx-probe/scripts/lib/guards/blast-radius.mjs', [
+  'liveAioWrite',
+  '--live',
+  'stripProsePayloads',
+  '-d\\b',
+  'TOKEN|',
+]);
+
+// A hook inherits the host environment, so an env prefix typed into a COMMAND
+// never reaches process.env; without this the advertised override cannot work.
+requireContent('plugins/yieldwerx-probe/scripts/guards/bash-guard.mjs', ['OVERRIDE_PREFIX']);
+
+// A verdict written anywhere but stdout never reaches the model.
+requireContent('plugins/yieldwerx-probe/scripts/lib/guards/hook-io.mjs', ['permissionDecision']);
+
+// Every path the hooks manifest names must actually ship.
+{
+  const hooksPath = path.join(root, 'plugins/yieldwerx-probe/hooks/hooks.json');
+  if (!fs.existsSync(hooksPath)) {
+    errors.push('plugins/yieldwerx-probe/hooks/hooks.json is missing - the guards are declared nowhere');
+  } else {
+    const declaredHooks = JSON.parse(fs.readFileSync(hooksPath, 'utf8'));
+    for (const group of Object.values(declaredHooks.hooks ?? {}).flat()) {
+      for (const hook of group.hooks ?? []) {
+        for (const m of String(hook.command ?? '').matchAll(/\$\{CLAUDE_PLUGIN_ROOT\}\/([^"'\s]+)/g)) {
+          if (!fs.existsSync(path.join(root, 'plugins/yieldwerx-probe', m[1]))) {
+            errors.push(`hooks.json names ${m[1]}, which does not ship`);
+          }
+        }
+      }
+    }
+  }
+}
+
 if (errors.length > 0) {
   process.stderr.write(`PROBE repository validation failed (${errors.length}):\n`);
   for (const error of errors) process.stderr.write(`- ${error}\n`);
