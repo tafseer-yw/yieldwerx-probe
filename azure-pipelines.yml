@@ -23,6 +23,16 @@ steps:
   - script: npm test
     displayName: Validate PROBE repository
 
+  # The marketplace resolves the plugin manifest, and `npm test` cannot see a
+  # break in it. Releases 2.13.0, 2.13.1 and 2.13.2 were ALL plugin-registration
+  # failures, and the one command that catches that class ran only by hand -
+  # even though CLAUDE.md and CONTRIBUTING.md both require it for every change.
+  #
+  # A hard gate, deliberately not `|| true`: a step that reports success when it
+  # did not run is worse than no step, because it reads as coverage.
+  - script: npx --yes @anthropic-ai/claude-code@latest plugin validate .
+    displayName: Validate plugin manifest
+
   - publish: $(Build.SourcesDirectory)
     artifact: yieldwerx-probe-source
     displayName: Publish validated source
