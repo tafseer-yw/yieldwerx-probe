@@ -1,0 +1,28 @@
+{
+  "hooks": {
+    "PreToolUse": [
+      {
+        "matcher": "Write|Edit|NotebookEdit",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "node \"${CLAUDE_PLUGIN_ROOT}/scripts/guards/write-guard.mjs\"",
+            "timeout": 15,
+            "statusMessage": "PROBE credential guard"
+          }
+        ]
+      },
+      {
+        "matcher": "Bash",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "node \"${CLAUDE_PLUGIN_ROOT}/scripts/guards/bash-guard.mjs\"",
+            "timeout": 15,
+            "statusMessage": "PROBE blast-radius guard"
+          }
+        ]
+      }
+    ]
+  }
+}
