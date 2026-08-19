@@ -2,7 +2,7 @@
 name: forge-prd
 user-invocable: true
 description: Use when a feature idea, request, or problem statement must become a requirements document every stakeholder can read — an executive to know what they are paying for, a developer to know what to build, a QA to know what to check, from the same words. Clarifies before writing and never invents a product decision; writes the PRD into the configured requirements home with a draft → in-review → signed-off filename lifecycle where sign-off is a recorded human decision. The signed-off PRD is what /probe-spec treats as canonical. PROBE Requirements Forge, shared by both tracks.
-track: shared
+track: cross
 safety: writes-shared
 produces: <prds-path>/<feature-slug>/prd-draft.md (renamed through the lifecycle, never copied)
 consumes: the stated idea/request/problem, existing product knowledge via the configured provider, any prior notes the caller supplies
