@@ -17,33 +17,31 @@ probe validate-config
 probe validate-spec <spec-analysis.md>
 probe lint-gherkin <feature-slug> [selectors]
 probe coverage <feature-slug>
-probe owner-bypass authorize|verify|consume [arguments]
 probe aio help
 probe aio check
 probe aio whoami
 probe aio folders
 probe aio cases
 probe aio sync <feature-slug>
+probe mcp-server
 ```
 
 `probe doctor` checks the configuration version, consumer paths, project-level
 plugin enablement, and installed plugin versions. Use
 `--skip-plugin-check` where the Claude CLI is not installed.
 
-All AIO writes remain dry-run by default. `probe aio sync --live` retains the
-same signed-gate and explicit-live protections as the bundled adapter. AIO
-credentials come from process environment variables or the consumer's
-gitignored `.env`; the CLI never prints their values.
+All AIO writes remain dry-run by default. `probe aio sync --live` requires a
+recorded human Design Gate approval for its scope and the explicit `--live`
+flag, exactly as the bundled adapter does. AIO credentials come from process
+environment variables or the consumer's gitignored `.env`; the CLI never prints
+their values.
 
-`probe owner-bypass authorize` is reserved for PROBE Owner Tafseer Haider
-(`tafseer.haider@yieldwerx.com`). It reads a private 6–12 digit
-`PROBE_OWNER_BYPASS_PIN` and a generated high-entropy signing key from the user
-environment or gitignored `.env`, asks for the matching PIN through hidden
-terminal input, and writes a short-lived signed receipt under
-`.probe/authorizations/`. Run `probe owner-bypass setup` once to configure
-both secrets without printing them. Never put the PIN in a command argument or
-chat. Use `verify` before applying the waiver and `consume` after the ledger
-records it.
+`probe mcp-server` starts the stdio MCP adapter — the engine for hosts that run
+processes but give the assistant no shell. Hosts normally launch it from the
+plugin manifest; this entry point exists for a manual MCP configuration and for
+debugging. It exposes the AIO sync verbs plus `probe_validate_spec`,
+`probe_lint_cases`, and `probe_coverage`, and refuses a live sync without an
+explicit `confirm`.
 
 ## Consumer package
 

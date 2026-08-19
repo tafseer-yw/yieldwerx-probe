@@ -128,3 +128,10 @@ report what the QA track needs to close the candidate.
   no dependency bump.
 - Work on `fix/<defect-slug>`. Never commit to a deployment branch, and never
   reproduce against a shared environment when a local one will do.
+
+## Closing state
+
+End in exactly one of the four D12 states — `COMPLETE` /
+`COMPLETE_WITH_NOTES` / `BLOCKED` / `NEEDS_INFO` — with the real verification
+output attached to `COMPLETE` and a recommended answer attached to
+`NEEDS_INFO`. Never report `COMPLETE` for work whose verification was not run.

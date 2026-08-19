@@ -6,7 +6,7 @@ track: scripting
 safety: writes-local
 produces: API clients, schemas, fixtures/steps/specs, test data, .probe/artifacts/<feature>/60-api-scripts/forge-notes.md
 consumes: approved feature cases, 40-api-recon/api-inventory.md, contract-drift.md, active framework profile
-argument-hint: <feature-slug> [--tc TC-id] [--operation operation-id] [--layer contract|integration|ui-interception|all]
+argument-hint: <feature-slug> [--stack <profile-name>] [--tc TC-id] [--operation operation-id] [--layer contract|integration|ui-interception|fuzz|all]
 ---
 
 > **Consumer contract:** Before using paths, commands, integrations, or
@@ -45,7 +45,7 @@ and execute the exact new scope.
 
 ## Preconditions
 
-1. Require the Design Gate and Case Audit authorization enforced by
+1. Require the recorded human Design Gate approval enforced by
    `/forge-scripts`; selectors may narrow but never expand approved scope.
 2. Require `40-api-recon/api-inventory.md` for each operation. Swagger alone
    is input to recon, not a substitute for drift and safety analysis.
@@ -54,22 +54,35 @@ and execute the exact new scope.
 
 ## Procedure
 
-1. Read [references/test-design.md](references/test-design.md). For the
+1. Resolve the stack per the `--stack` rules in
+   `${CLAUDE_PLUGIN_ROOT}/references/configuration.md`, and build the typed
+   client/fixtures against that stack's real API conventions. Then read
+   [references/test-design.md](references/test-design.md); for the
    `playwright-bdd` profile, also read its coding conventions and inspect
    existing `src/api`, fixtures, aliases, and BDD bindings.
 2. Compute `requested scope ∩ approved automate-now cases ∩ reconciled
 operations`. Record unmatched, conflicting, unsafe, and automated items.
 3. Choose `contract` (status/headers/schema), `integration` (business state),
-   `ui-interception` (request or response-driven UI), or `all` only when
-   approved cases require complementary evidence.
+   `ui-interception` (request or response-driven UI), `fuzz`
+   (property-based generation from the OpenAPI schema — see below), or `all`
+   only when approved cases require complementary evidence.
    Use business-readable Gherkin for stakeholder-facing workflows and
    acceptance behavior. Use data-driven TypeScript specs for exhaustive
    operation/schema/status matrices; do not explode a contract matrix into
    repetitive scenarios.
    Route performance/load/spike/stress/endurance requirements to
    `/forge-performance-tests`; do not implement them as repeated Playwright
-   loops. Keep broad randomized fuzzing and active security scanning in separate
-   explicitly authorized suites.
+   loops.
+
+   **The `fuzz` layer is property-based API testing** driven by the configured
+   engine (Schemathesis by default — see the security-tools contract). It
+   generates cases from the OpenAPI schema and finds validation bypasses,
+   response-schema violations, and crashes that example-based cases miss —
+   1.4–4.5× the defects of comparable tools in one academic evaluation. It is
+   the QA-owned complement to `/scan-security`'s active scan: contract-level
+   robustness (A05/A10) driven from the same spec the contract tests use. Wire
+   it to `commands.securityFuzz`; keep active security *scanning* (attack
+   traffic) in `/scan-security` under its authorization rules.
 4. Centralize base URL, auth, logging, status handling, redaction, and retries
    in domain clients. Return `unknown` until a runtime schema validates it;
    infer TypeScript types from that schema.

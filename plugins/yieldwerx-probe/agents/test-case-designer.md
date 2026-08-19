@@ -66,7 +66,10 @@ Workflow AC into clear manual steps. Turn a Simple Rule into the positive,
 negative, and edge cases needed to prove it. Do not copy the AC and call the
 design complete.
 
-### 1. A Gherkin feature file → `features/<feature-slug>/<category-slug>.feature`
+### 1. Gherkin feature files → `features/<feature-slug>/<category-slug>.feature`
+
+and, for every category with API candidates,
+`features/<feature-slug>/<category-slug>-api.feature`
 
 These files are the **test case of record**: a QA executes them by hand and a PO
 reads them for coverage. Write for that reader — the file must be executable
@@ -117,9 +120,12 @@ data`, `required data`, or an unselected `A or B` choice. Make the selection
   API-only scenarios also carry `@api`; `@api`, `@testtype:api`,
   `@testtype:contract`, and `@testtype:performance` scenarios remain repository-only and never receive an
   AIO key.
-  For every category, return one explicit visual disposition:
+  For every category, return one explicit visual disposition **and one explicit
+  API disposition**:
   `Visual candidates: <TC ids or planned behaviors>` or
-  `Visual: N/A — <specific reason>`.
+  `Visual: N/A — <specific reason>`, and
+  `API candidates: <TC ids or planned behaviours>` or
+  `API: N/A — <specific reason>`.
 - A `# AC: AC-NN[,AC-NN]` comment above each scenario. The id lives in the tag and
   title; the comment carries only the AC mapping. TC ids are never renumbered.
 
@@ -180,10 +186,16 @@ one table row per scenario:
 
 ### 3. An automation-plan block → `.probe/artifacts/<feature>/20-cases/automation-plan.md`
 
-One row per scenario, **four columns only**:
+One row per scenario, **five columns only**:
 
-| TC  | Effort | Tier | Disposition / blocker |
-| --- | ------ | ---- | --------------------- |
+| TC  | Effort | Tier | Disposition / blocker | Target forge |
+| --- | ------ | ---- | --------------------- | ------------ |
+
+`Target forge` is where the scenario goes when it is automated:
+`/forge-scripts` for UI levels, `/forge-api-tests` for `@testtype:api` and
+`@testtype:contract`, `/forge-performance-tests` for `@testtype:performance`.
+Recording it at design time is what stops an API case from silently arriving in a
+Playwright cycle.
 
 Score the ACS dimensions to _decide_ the tier; do **not** record the five
 sub-scores — nothing downstream reads them. Add the effort driver only when it is
@@ -204,7 +216,51 @@ suggested pace.
    die conservation only where the contract processes a die/bin population.
 4. Evidence preconditions must be feasible through the category's approved
    strategy, or carry an explicit blocker.
-5. **Visual candidacy (`@visual`)** — only when correctness is observable _solely_
+5. **API candidacy — required for every category.** Design the category at both
+   layers. A service surface behind the screens is where most business rules
+   actually live; designing only what a browser shows leaves it untested until
+   someone notices.
+
+   Record exactly one disposition per category, alongside the visual one:
+
+   ```
+   API candidates: <TC ids or planned behaviours>
+   API: N/A — <specific reason>
+   ```
+
+   A generic `N/A` is not acceptable. Name why the category has no service
+   surface, or name the `CAT-NN` that covers its operations.
+
+   For a category that has one, cover the dimensions rather than one shallow case
+   per endpoint:
+
+   - **functional** — the operation succeeds and the state really changed;
+   - **negative** — invalid input, missing fields, conflicting state, and the exact
+     response;
+   - **boundary** — limits, empty sets, maximum sizes, first and last valid values;
+   - **authorization** — who may call it and what an unpermitted caller receives
+     (`@testtype:security` with `@api`);
+   - **contract** — status, required headers, response shape and compatibility
+     (`@testtype:contract`);
+   - **workload** — an approved performance objective (`@testtype:performance`,
+     mapped to k6, never Playwright steps).
+
+   Functional, negative, and authorization apply to nearly every service surface.
+   Contract and workload are candidates or a specific `N/A`.
+
+   **Expected values follow the same authority rule and it matters more here**,
+   because a requirement rarely states status codes. Use the requirement's value
+   when it has one; otherwise cite `40-api-recon/api-inventory.md` as *observed
+   contract*; otherwise raise a `Q-NN` and mark the expectation open. Never invent
+   a status code, message, or response shape. With no API inventory, design at the
+   business-operation level and record `TODO(env)`.
+
+   API scenarios go to `features/<feature-slug>/<category>-api.feature`, sharing
+   the category's AC set, TC id sequence, and case-details tables. They carry
+   `@api` plus their one primary `@testtype:`, and stay repository-only — no
+   external case key.
+
+6. **Visual candidacy (`@visual`)** — only when correctness is observable _solely_
    in rendered pixels and cannot be proven by the data layer (colorscale mapping,
    legend/ink z-order, notch geometry, tile layout, CSS bleed). Such a scenario
    pins a NAMED baseline and asserts **the image only** — a wrong number is always
@@ -216,11 +272,17 @@ suggested pace.
    implementation observations before deciding. A visual clue must become a
    tagged candidate, a specific `N/A`, or a named cross-category deferral with
    the target `CAT-NN` and rendering behavior.
-6. **Test-level (`@testtype:`) classification — and the routing decision.** Tag
+7. **Test-level (`@testtype:`) classification — and the routing decision.** Tag
    every scenario with exactly one primary `@testtype:` from the **QA-owned** set:
    - one UI screen/component/chart in isolation → `component`;
    - a full user workflow across screens → `e2e`;
    - authorization observable through a supported UI or API → `security`;
+   - behavior reachable only through the WinForms desktop application (the
+     desktop report workflow, Selection Criteria, Gallery/Zoom-In) keeps its real
+     level — `e2e` for a workflow, `component` for one screen — and additionally
+     carries the orthogonal **`@desktop`** tag, which is what routes it to
+     TestComplete at automation time. The level says how deep; the surface tag
+     says where. Never invent a `desktop` level.
    - a business workflow or service behavior exercised through HTTP → `api`;
    - status/header/schema compatibility at a consumer boundary → `contract`;
    - an approved API workload with measurable latency/error/throughput or
@@ -262,7 +324,7 @@ and cost (inverse of effort), then assign one:
 
 Record the tier, not the sub-scores. Candidacy is sequencing advice: you
 recommend, the Design Gate signer confirms. A case may instead terminate as
-`manual-permanent`, `deferred-until:<condition>`, `retired`, or `waived` — each
+`manual-permanent`, `deferred-until:<condition>`, or `retired` — each
 needs a rationale and an owner.
 
 **Pacing** — sum the `@auto:now` effort; at the default **5 points/day** (state the
@@ -294,7 +356,8 @@ status). Duplicating it by hand costs tokens and drifts. Instead return a short
 - Rendering-only ACs and the `@visual` scenario covering each, or the gap.
 - Any AC you could not cover as a QA case and did not route, with the reason.
 - The **routing reconciliation**: `<n> ACs in QA scenarios · <m> routed · <k>
-uncovered`. `k` must be **0** — a non-zero `k` is a Case Audit `blocker`.
+uncovered`. `k` must be **0** — a non-zero `k` is an uncovered requirement and
+belongs in the Design Gate's Gaps list.
 - The **automation-plan rollup**: per-category effort total, `@auto:now/next/later`
   counts, the initial manual-only count (equal to designed scenarios at this
   stage), approved dispositions, unresolved count, and suggested schedule.

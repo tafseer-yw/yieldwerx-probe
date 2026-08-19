@@ -1,9 +1,9 @@
 #!/usr/bin/env node
 /** PreToolUse guard for Write/Edit: credentials. Silent unless something fires. */
 
-import { pathToFileURL } from "node:url";
-import { readHookPayload, emitDecision, overridden } from "../lib/guards/hook-io.mjs";
-import { secretsVerdict } from "../lib/guards/secrets.mjs";
+import { pathToFileURL } from 'node:url';
+import { readHookPayload, emitDecision, overridden } from '../lib/guards/hook-io.mjs';
+import { secretsVerdict } from '../lib/guards/secrets.mjs';
 
 /**
  * The written text, whichever tool is writing it.
@@ -17,17 +17,19 @@ export function writtenText(toolInput = {}) {
     toolInput.content,
     toolInput.new_string,
     toolInput.new_source,
-    ...(Array.isArray(toolInput.edits) ? toolInput.edits.map((e) => e?.new_string ?? e?.new_source) : []),
+    ...(Array.isArray(toolInput.edits)
+      ? toolInput.edits.map((e) => e?.new_string ?? e?.new_source)
+      : []),
   ]
-    .filter((p) => typeof p === "string")
-    .join("\n");
+    .filter((p) => typeof p === 'string')
+    .join('\n');
 }
 
 export function evaluate(payload, env = process.env) {
   const input = payload?.tool_input ?? {};
-  const filePath = input.file_path ?? input.notebook_path ?? "";
+  const filePath = input.file_path ?? input.notebook_path ?? '';
   if (!filePath) return null;
-  if (overridden("PROBE_ALLOW_SECRET_WRITE", env)) return null;
+  if (overridden('PROBE_ALLOW_SECRET_WRITE', env)) return null;
   return secretsVerdict({ filePath, content: writtenText(input) });
 }
 

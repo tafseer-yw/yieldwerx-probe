@@ -57,9 +57,9 @@ and keep the reporting trail trustworthy.
    Manual-only count is designed scenarios whose effective tags include
    `@manual` but not `@automated`, including inherited Feature/Rule tags.
    Report designed, automated, and manual-only counts plus each terminal
-   disposition. Ops Gate requires zero unresolved dispositions; manual-permanent,
-   deferred, retired, or waived cases need exact TC id, rationale, owner,
-   applicable condition/expiry, and human approval.
+   disposition. The Ops Gate digest reports every unresolved disposition;
+   manual-permanent, deferred, and retired cases need an exact TC id, rationale,
+   owner, and applicable condition or expiry.
 8. **Jira AIO identity is durable**: the original manual test record retains
    its stable id and manual status after automation. Publish automated
    scenario/result links onto that record; never delete, replace, or duplicate

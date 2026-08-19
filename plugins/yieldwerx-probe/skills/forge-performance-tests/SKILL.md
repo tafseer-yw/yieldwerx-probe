@@ -6,7 +6,7 @@ track: scripting
 safety: writes-local
 produces: performance scenarios/helpers, performance workload manifest, .probe/artifacts/<feature>/60-performance-scripts/forge-notes.md
 consumes: approved performance design, 40-api-recon/api-inventory.md, SLOs/workload model, active framework profile
-argument-hint: <feature-slug> [--profile smoke|load|spike|stress|endurance] [--operation operation-id]
+argument-hint: <feature-slug> [--stack <profile-name>] [--profile smoke|load|spike|stress|endurance] [--operation operation-id]
 ---
 
 > **Consumer contract:** Before using paths, commands, integrations, or
@@ -60,8 +60,13 @@ load, then run only the authorized intensity.
    performance README/configuration. Inspect existing helpers before adding a
    new pattern.
 2. Map approved TC/AC ids to operations, user journey, traffic mix, arrival or
-   concurrency model, ramp, duration, data volume, and SLO. Record assumptions
-   as assumptions, never as product facts.
+   concurrency model, ramp, duration, data volume, and SLO. **Source the SLO
+   and workload from the requirement**: the spec analysis's performance ACs and
+   the tech design's stated objectives are the numbers, cited by id. A
+   threshold with no such source is an open question for the requirement owner,
+   never an invented figure — the skill already forbids inferring an SLO, and
+   this is where that rule gets its input. Record every remaining assumption as
+   an assumption, never as a product fact.
 3. Choose the smallest applicable profile: smoke for script correctness, load
    for expected traffic, spike for a sudden surge, stress for capacity/breaking
    behavior, or endurance for leak/degradation risk.

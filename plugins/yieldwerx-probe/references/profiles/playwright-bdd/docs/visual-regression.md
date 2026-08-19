@@ -156,7 +156,7 @@ correctness lives in the pixels and nothing else can see it — colorscale
 mapping, legend rendering, ink-overlay z-order, notch geometry, layout, CSS
 bleed, or Plotly-upgrade rendering drift. Such a scenario pins a named baseline,
 asserts the image only, and **complements** the data-layer scenario rather than
-replacing it (a wrong _number_ is always an oracle/DB `blocker`). **Case Audit**
+replacing it (a wrong _number_ is always an oracle/DB `blocker`). **The Design Gate digest**
 then verifies that every rendering-only requirement has `@visual` coverage and
 that no data assertion is misfiled as a pixel check. The `@visual` tag alone
 routes the scenario to this container-only `visual` project (host projects

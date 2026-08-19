@@ -32,7 +32,7 @@ const COMMANDS: Cmd[] = [
   },
   {
     cmd: 'probe aio sync <feature> --live',
-    desc: 'Send cases after Design Gate approval or an allrounder bypass.',
+    desc: 'Send cases after a recorded human Design Gate approval.',
   },
 ];
 

@@ -1,7 +1,7 @@
 ---
 name: update-cases
 user-invocable: true
-description: Use when existing designed test cases need targeted amendment rather than redesign — an answered open question, a Case Audit finding, a spec change, a UI change-impact result, or a wrong expected value. Edits the affected scenarios in place, preserves TC ids and AIO keys, and records what the change invalidates downstream. Never regenerates a feature file. PROBE Case Forge amendment path.
+description: Use when existing designed test cases need targeted amendment rather than redesign — an answered open question, a review finding, a spec change, a UI change-impact result, or a wrong expected value. Edits the affected scenarios in place, preserves TC ids and AIO keys, and records what the change invalidates downstream. Never regenerates a feature file. PROBE Case Forge amendment path.
 track: design
 safety: writes-shared
 produces: amended features/<feature-slug>/*.feature (in place), .probe/artifacts/<feature>/20-cases/amendments/<date>-<n>.md, updated case-details.md / automation-plan.md / dev-handoff.md entries
@@ -56,7 +56,7 @@ re-mint its id.
 - **feature-slug** — must already have `features/<feature-slug>/*.feature`.
 - **the required change** — free text and/or a source artifact. Typical triggers:
   an **answered open question** (a `TODO(spec)` literal becomes real and a
-  `deferred-until:Q-NN` disposition lifts — the most common case) · a **Case Audit
+  `deferred-until:Q-NN` disposition lifts — the most common case) · a **review
   finding** · a **spec change** · a **UI rename** (`/change-impact`, `ui:check`) ·
   a **wrong expected value** found in a run · a **disposition change**.
 

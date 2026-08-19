@@ -47,9 +47,7 @@ if (!['migrate-format', 'reconcile'].includes(mode)) {
   errors.push('Summary needs "**Mode:** migrate-format" or "**Mode:** reconcile".');
 }
 if (!['no-change', 'format-only', 'substantive', 'blocked'].includes(result)) {
-  errors.push(
-    'Summary needs "**Result:** no-change", "format-only", "substantive", or "blocked".',
-  );
+  errors.push('Summary needs "**Result:** no-change", "format-only", "substantive", or "blocked".');
 }
 for (const label of ['Feature', 'Run date']) {
   if (!field(summaryText, label)) errors.push(`Summary needs "**${label}:**".`);
@@ -85,9 +83,7 @@ const tableRows = tableLines.map((line) =>
 );
 const headerIndex = tableRows.findIndex(
   (cells) =>
-    cells.length >= 6 &&
-    cells[0].toLowerCase() === 'item' &&
-    cells[1].toLowerCase() === 'change',
+    cells.length >= 6 && cells[0].toLowerCase() === 'item' && cells[1].toLowerCase() === 'change',
 );
 if (headerIndex < 0) {
   errors.push(
@@ -164,13 +160,7 @@ if (result === 'format-only' && !hasFormatChange) {
 }
 
 const impactText = section('Downstream impact');
-for (const label of [
-  'Cases',
-  'Case Audit',
-  'Design Gate',
-  'Scripts and run evidence',
-  'External case sync',
-]) {
+for (const label of ['Cases', 'Design Gate', 'Scripts and run evidence', 'External case sync']) {
   if (!field(impactText, label)) errors.push(`Downstream impact needs "**${label}:**".`);
 }
 

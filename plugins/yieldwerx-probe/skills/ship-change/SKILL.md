@@ -137,3 +137,10 @@ the boundary of any action that leaves this machine.
   omitting it.
 - Secrets, tokens, and machine-specific paths never enter a commit message, a
   pull-request body, or the ship notes.
+
+## Closing state
+
+End in exactly one of the four D12 states — `COMPLETE` /
+`COMPLETE_WITH_NOTES` / `BLOCKED` / `NEEDS_INFO` — with the real verification
+output attached to `COMPLETE` and a recommended answer attached to
+`NEEDS_INFO`. Never report `COMPLETE` for work whose verification was not run.

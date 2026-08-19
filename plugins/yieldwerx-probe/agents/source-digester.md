@@ -45,5 +45,21 @@ it never pays to load the full source.
    A knowledgebase or handbook may help label terminology when the caller
    explicitly supplies it as context, but it must not add behavior, values,
    conditions, or expected results to the digest.
+8. **Copy every name exactly, and never invent a short form.** Controls, screens,
+   fields, tabs, buttons, statuses, messages, roles, modes, reports, and product
+   terms are returned **character for character** as the source writes them — same
+   words, same capitalisation, same spacing, same singular or plural. Do not
+   shorten `Cluster Detection Mode` to `cluster mode`, do not re-case `Scope
+   level` to `Scope Level`, and never coin an acronym the source does not use.
+   Compression applies to your prose, never to a name.
+
+   When the contract asks for the source's terms, return them as
+   `term (verbatim) · section where it appears`, and mark which ones the source
+   itself abbreviates or gives an acronym for — the calling stage needs that
+   distinction to know which short forms are legitimate.
+
+   If the source spells the same thing two ways, return both spellings and flag it
+   as an inconsistency. Do not normalise it; choosing one is the calling stage's
+   decision to escalate, not yours to make silently.
 
 Your entire output is the digest. Keep it as short as fidelity allows.

@@ -1,9 +1,9 @@
 #!/usr/bin/env node
 /** PreToolUse guard for Bash: git history and live AIO writes. Silent unless something fires. */
 
-import { pathToFileURL } from "node:url";
-import { readHookPayload, emitDecision, overridden } from "../lib/guards/hook-io.mjs";
-import { blastRadiusVerdict } from "../lib/guards/blast-radius.mjs";
+import { pathToFileURL } from 'node:url';
+import { readHookPayload, emitDecision, overridden } from '../lib/guards/hook-io.mjs';
+import { blastRadiusVerdict } from '../lib/guards/blast-radius.mjs';
 
 /**
  * The override rides on the command itself.
@@ -19,7 +19,7 @@ const OVERRIDE_PREFIX = /^\s*PROBE_ALLOW_UNSAFE_GIT=(?:1|true)\s+/;
 export function evaluate(payload, env = process.env) {
   const command = payload?.tool_input?.command;
   if (!command) return null;
-  if (overridden("PROBE_ALLOW_UNSAFE_GIT", env)) return null;
+  if (overridden('PROBE_ALLOW_UNSAFE_GIT', env)) return null;
   if (OVERRIDE_PREFIX.test(command)) return null;
   return blastRadiusVerdict({ command });
 }

@@ -2,6 +2,279 @@
 
 All notable changes to YieldWerx PROBE are recorded here.
 
+## 3.1.0 — 2026-08-19
+
+**Two full tracks that share one requirement.** The Dev track gets a front (a
+PRD skill) and a back (unit tests, migrations, styleguide, PR review), one skill
+set targets many stacks by argument, and the QA track reaches three surfaces it
+could not before: the desktop application, property-based API fuzzing, and
+OWASP 2025 security.
+
+### Shared
+
+- **`/probe-spec` is now `track: shared`.** One `spec-analysis.md` per feature,
+  jointly owned; whoever runs it second reads the existing analysis (the
+  unqualified rerun already fails closed), and a requirement change goes through
+  `--reconcile`, reporting downstream impact to both tracks. New policies D10
+  (shared spec) and D9 (stack routing) in DEV-TRACK.md.
+- **`/forge-prd`** — writes a PRD every stakeholder reads the same way: problem
+  and cost, product-word build description, stable `US-NN` stories each with a
+  plain-words explanation, open questions with recommended answers, and a Terms
+  table. Lives in the configured PRDs home with a
+  draft → in-review → signed-off **filename** lifecycle; sign-off is a recorded
+  human decision, never implied. Enforced by `validate-prd.mjs` (CLI
+  `probe validate-prd`, MCP `probe_validate_prd`), which shares the exact
+  plain-language checker that guards `spec-analysis.md` — extracted to
+  `scripts/lib/plain-language.mjs` so the two documents cannot drift into
+  different languages.
+
+### Stacks (`--stack`)
+
+- Dev-track skills resolve stack facts — layers, conventions, commands, traps —
+  from a **profile**, so one skill set serves any stack and adding a stack is a
+  profile, never a new skill. New: the profile contract
+  (`references/profiles/README.md`) and four profiles — `dotnet-legacy` (the
+  shipped ASP.NET MVC 5 / EF6 / SQL Server / WinForms platform, from the
+  knowledgebase handbook), `dotnet-modern` (**provisional** — direction only,
+  no repository behind it yet), `node-ts-spa`, and `testcomplete-winforms`.
+- New `stacks:` config key; `--stack` resolution fails closed (never guesses a
+  stack).
+
+### Dev track — design, build, review
+
+- **`/forge-tech-design`** + `tech-designer` agent — the spec analysis becomes a
+  stack-fitted design: layer map, data model with migration outline, API
+  contract, tenancy/authorization/auditing/logging, testability obligations, a
+  threat sketch (feeding OWASP A06), and ADR decision records. Refuses to design
+  on open blocking questions.
+- **`/build-feature`** gains `--stack` and `--layer backend|frontend|both`;
+  backend-led runs emit the **FE handoff report** (endpoints, payloads, lookup
+  names, field ids) so frontend work starts from a contract.
+- **`/forge-unit-tests`** — the developer-owned coverage the spec routed to
+  unit/integration level in `dev-handoff.md` (which nothing consumed before),
+  with independently derived expected values.
+- **`/forge-migration`** — safe, registered migrations under the rules that make
+  them boring: never edit an applied migration, additive first, two-step
+  NOT NULL, idempotent seeds, audited-table pairs.
+- **`/sync-styleguide`** — implemented UI reconciled against the repository's own
+  styleguide and tokens; the plugin never bundles a copy of anyone's design
+  system.
+- **`/review-pr`** — the opened pull request reviewed as its reviewer
+  (`gh` / `az repos`), GO / NO-GO evidence, never a merge.
+- **`/handoff`** — session-to-session continuity, facts from git and real
+  verification output.
+- **Four closing states** (`COMPLETE` / `COMPLETE_WITH_NOTES` / `BLOCKED` /
+  `NEEDS_INFO`, the last always carrying a recommended default) as policy D12,
+  applied across the dev skills. The `requirement-clarifier` now gives every
+  open question a recommended answer.
+
+### QA track — desktop, API, performance, security
+
+- **Desktop (TestComplete).** `/desktop-recon` + agent surveys the WinForms app,
+  harvests Name Mapping candidates, and reports every control with no
+  developer-set `Name` as a testability gap (the desktop's `testid-gaps`).
+  `/forge-desktop-scripts` + `testcomplete-scripter` agent imports the same
+  `.feature` files into TestComplete's Scenarios item and binds **Python** step
+  definitions — one case of record, two runners. The CI reality is encoded:
+  TestComplete needs an **interactive session** (headless agents cannot run it),
+  and only exit code **2** counts against the stability streak (3/4/127/1000/
+  1001/−1 are environment findings).
+  **`@desktop` is a surface tag, not a test level** — a behaviour reachable only
+  through the desktop application is still `@testtype:e2e` or
+  `@testtype:component` and carries `@desktop` alongside, exactly as `@visual`,
+  `@a11y`, and `@api` ride alongside a level. The tag is what routes a scenario
+  to TestComplete instead of Playwright.
+  The profile carries an **operating model for a separate desktop team**: cases
+  and ledger resolve from the QA repository's checkout (unresolvable paths are
+  refused, never guessed), the `@automated` write-back is a cross-repository edit
+  with an explicit no-write-access path, and two automations tagging one feature
+  file is a named hazard with a resolution rule.
+- **API fuzzing.** `/forge-api-tests` gains a `fuzz` layer (property-based
+  generation from the OpenAPI schema — Schemathesis by default) and `--stack`.
+- **Performance.** `/forge-performance-tests` sources its SLO and workload from
+  the requirement's performance ACs by id, never an invented figure; adds
+  `--stack`.
+- **Security (OWASP Top 10:2025).** `/forge-security-tests` authors the four-plus
+  categories a scanner cannot judge (access control, insecure design,
+  authentication, logging), tagged `@owasp:ANN`. `/scan-security` +
+  `security-analyst` agent drives the scannable categories through a **swappable
+  tool contract** (ZAP, Schemathesis, OSV-Scanner/Trivy, Semgrep by default),
+  maps findings to categories and the severity ladder, triages confirmed from
+  noise, and routes confirmed findings to `/bug-report`. **Active scans require
+  explicit target authorization and fail closed** — the same rule as a live AIO
+  write. The coverage map is honest that no scanner covers the Top Ten.
+
+### Housekeeping
+
+- 31 → 42 skills, 13 → 17 agents.
+- probe-lab's `probe.config.yaml`: `probeVersion` 2.13.0 → 3.1.0, the removed
+  `governance.gates` block deleted, a `stacks: [node-ts-spa]` declaration added.
+
+### Upgrading
+
+See [MIGRATION.md](MIGRATION.md). No 3.0 behavior changed; everything here is
+additive. Existing consumers gain the new skills on install and opt into
+`--stack` by declaring `stacks:` in their config.
+
+## 3.0.0 — 2026-08-18
+
+**Every gate becomes a record of a human decision, and the four mechanisms that
+existed to argue with computed verdicts are gone.**
+
+A gate used to compute a `READY`/`NOT READY` verdict and block on it. That needed
+a waiver system, an audit-bypass system, a PIN-authorized owner override, and a
+hibernation mode — five mechanisms arguing with a fourth one nobody had asked
+for. What was always doing the real work is the part that remains: a named human
+reads the evidence, says they approve, and the decision is recorded with a
+timestamp.
+
+### Gates
+
+- A gate now does four things: **assemble** an evidence digest of facts,
+  **present** it, **record** the human's decision, **unlock** the next stage.
+- The digest carries counts, coverage numbers, lint and run results, and a
+  **Gaps and open items** section listing everything missing or failing. No
+  verdict, no readiness stamp, no ✅/❌ checklist, no recommendation.
+- The approval row names the human, their role, a `YYYY-MM-DD HH:MM` timestamp,
+  what they said they reviewed, and the evidence link. **Any role may approve any
+  gate** — no signer hierarchy.
+- Approving with the listed gaps visible is a legitimate decision and is recorded
+  as exactly that. Removing a gap from a digest to make a decision look cleaner is
+  falsified evidence and remains the most serious failure in the process.
+- Claude never writes an approval a human did not state. It may transcribe one
+  they did.
+- One block remains: `/forge-scripts` refuses until the ledger has a Design Gate
+  approval row for the scope. It blocks on exactly one thing — whether a human has
+  looked at the design.
+- New authority: `references/governance/human-gates.md`.
+
+### Removed
+
+| Removed                                     | Replacement                                                     |
+| ------------------------------------------- | --------------------------------------------------------------- |
+| `/yw:audit-cases` + `test-case-auditor`     | the Design Gate digest, the coverage report, Case Forge's self-check |
+| `/yw:bypass-gate`                           | nothing — there is no waiver to record                          |
+| `/yw:owner-bypass` + its CLI and receipts   | nothing — there is no computed blocker to override              |
+| `references/governance/gate-hibernation.md` | `references/governance/human-gates.md`                          |
+| `governance.gates` in `probe.config.yaml`   | —                                                               |
+| the `waived` ledger status and waiver table | —                                                               |
+
+`/yw:audit-scripts` survives as an **advisory** review: it holds no ledger row,
+gates nothing, and needs no waiver. `/yw:green-run` and `/yw:gate-merge` no longer
+require it. Its findings are reported into the Merge Gate digest for a human to
+weigh.
+
+Skills: 34 → 31. Agents: 14 → 13. Severity is now classification, not control
+flow — nothing halts automatically, and a `blocker` a human knowingly approves
+past is a recorded decision.
+
+### Spec Probe writes plain language, and it is enforced
+
+The rules existed as prose for four minor versions and drifted every time: the
+analysis shortened the product's own control names, coined acronyms that exist
+nowhere in the product, and restated one-line rules as architecture.
+`validate-spec-analysis.mjs` now rejects each.
+
+- **Labels are verbatim** — every control, screen, field, button, and status is
+  written exactly as the source writes it. `Cluster Detection Mode` is never
+  `cluster mode` and never `CDM`.
+- **No invented acronyms** — one may appear only if the requirement itself uses it
+  and a new required `## Terms` table cites where. Process ids, units, and file
+  formats are exempt by a fixed list.
+- **No abbreviations** — in summaries, plain-words lines, and Gherkin steps alike.
+- **New required field: `**In plain words:**`** — one to three sentences per
+  acceptance criterion for a reader with no domain knowledge. This is the answer
+  to "someone outside the domain cannot read our specs".
+- Summaries are capped at one sentence of twenty words.
+- New reference: `skills/probe-spec/references/plain-language.md`.
+- `--migrate-format` brings an existing analysis forward, adding both new fields
+  without changing any meaning or invalidating downstream evidence.
+
+### Case Forge designs API cases in every category
+
+- Every category records an explicit **API disposition** alongside its visual one:
+  `API candidates: <TC ids>` or `API: N/A — <specific reason>`. A generic `N/A` is
+  a gap.
+- For a category with a service surface, design across the dimensions —
+  functional, negative, boundary, authorization, contract, workload — rather than
+  one shallow case per endpoint.
+- API scenarios go to `features/<slug>/<category>-api.feature`, beside the UI file.
+- Expected values follow the unchanged authority rule, which matters more here
+  because a requirement rarely states status codes: use the requirement's value,
+  else cite `40-api-recon/api-inventory.md` as observed contract, else raise a
+  `Q-NN`. Never invent a status code.
+- Spec Probe's category table gains a **Service surface** column so Case Forge has
+  something concrete to design against.
+- `automation-plan.md` gains a **Target forge** column, so an API case cannot
+  silently arrive in a Playwright cycle.
+- API cases remain **repository-only** — the AIO exclusion is unchanged.
+
+### Claude Desktop can run Case Sync
+
+Every capability with an executable behind it was reachable only through a shell
+command. Claude Desktop runs processes but gives the assistant no shell, so
+`/yw:sync-cases` had no engine there at all, and the spec validator, Gherkin lint,
+and coverage report were unreachable for the same reason.
+
+- **New stdio MCP adapter** — `adapters/mcp/server.mjs`, dependency-free, declared
+  in `plugin.json`, so installing the plugin is the whole setup. Tools:
+  `aio_check`, `aio_whoami`, `aio_folders`, `aio_cases`, `aio_plan`, `aio_sync`,
+  `probe_validate_spec`, `probe_lint_cases`, `probe_coverage`. Each spawns the
+  same bundled script the CLI runs.
+- **`aio_sync` carries its own confirmation.** The guard that asks before a live
+  AIO write is a PreToolUse hook on the *Bash* tool; on the MCP path there is no
+  Bash call, so it never fires. The tool refuses without `confirm: true`, and the
+  adapter beneath it still refuses without a recorded human approval.
+- **Case Sync is defined against verbs, not commands** — `check · explore · plan ·
+  authorize · push · write back` — with three engines: CLI, MCP, and an export
+  bundle when neither is available. `plan` is always free and writes nothing;
+  `push` is doubly gated. An export bundle is recorded as `blocked`, never `done`.
+- The skill states which engine it selected. A quiet fallback looks exactly like a
+  sync that worked.
+- New: `probe mcp-server` CLI entry point,
+  `references/integrations/case-management.md` (the adapter contract), and a
+  **Hosts without a shell** section in `references/configuration.md` covering the
+  validator, lint, and coverage.
+- New test: `scripts/test-mcp-server.mjs` pins the handshake, the tool inventory,
+  real script execution, and the live-write refusal.
+
+### Caught in review, before release
+
+Seven defects found reviewing this change against itself. The first is the one
+worth knowing about:
+
+- **A ledger nobody had approved could authorize a live production push.** The
+  pre-3.0 compatibility fallback read the stage table's Design Gate status — but a
+  3.0 ledger *also* carries `DESIGN GATE | … | done`, which the gate skill sets
+  when it records an approval. A ledger built straight from the new template, with
+  an empty Gate approvals table, therefore reported `Design Gate authorized: yes`.
+  The fallback now speaks only when the approvals table is absent entirely, and
+  six executed regression cases in `test-aio-payload.mjs` pin it.
+- The plain-language checker flagged Gherkin placeholders (`<fileType>`) as
+  invented acronyms, with no way to satisfy the error. Placeholders are structure,
+  not prose, and are now excluded.
+- `plain-language.md` Rule 3 listed abbreviations the checker did not reject.
+  The list and the code now match, and a `## Terms` row clears a short form the
+  source itself uses.
+- The MCP adapter spawned configured commands with `shell: false`, so `npm run …`
+  — what the shipped example configs use — could not launch on Windows, the main
+  platform for the no-shell host the adapter exists to serve.
+- An unexpanded `${CLAUDE_PROJECT_DIR}` is a truthy string, so the fallback to the
+  working directory never fired and every tool failed with an `ENOENT` that blamed
+  Node. The path is now validated as a real directory first.
+- A regex-escape helper in the adapter escaped nothing (a string-context pattern
+  in a regex literal). Latent, now correct.
+- One MCP test assertion could never fail. It now compares every emitted line, and
+  proves it can fail.
+
+### Upgrading
+
+See [MIGRATION.md](MIGRATION.md). Existing ledgers are **not** rewritten — old
+waiver, hibernation, and bypass rows stay as the record of what was decided under
+the process in force at the time. `/yw:sync-cases` and `/yw:forge-scripts` accept a
+pre-3.0 stage-row Design Gate status of `approved`, `signed`, or `done`, and
+deliberately reject `bypassed`, `waived`, and `hibernated`.
+
 ## 2.13.2 — 2026-08-17
 
 **Removes an unenforced hard dependency and moves the knowledgebase marketplace

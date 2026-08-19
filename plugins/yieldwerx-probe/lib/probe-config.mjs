@@ -6,15 +6,27 @@ const topLevelKeys = new Set([
   'schemaVersion',
   'probeVersion',
   'profile',
+  'stacks',
   'paths',
   'commands',
   'integrations',
   'policies',
-  'governance',
 ]);
-const datePattern = /^\d{4}-\d{2}-\d{2}$/;
-const gateModes = new Set(['active', 'hibernated']);
-const gateScopes = new Set(['design', 'merge', 'ops']);
+
+/**
+ * Keys that existed and were deliberately removed, with what to do about it.
+ *
+ * A bare "Unknown top-level key" reads as a typo, and the natural response to a
+ * suspected typo is to put the key back. These entries say the key is gone on
+ * purpose and why, so an upgrade fails in a way that explains itself.
+ */
+const removedTopLevelKeys = new Map([
+  [
+    'governance',
+    'governance.gates (gate hibernation) was removed in 3.0. Gates no longer block — ' +
+      'each one records a human decision — so there is nothing to suspend. Delete the block.',
+  ],
+]);
 
 function stripComment(line) {
   let quote = null;
@@ -61,10 +73,9 @@ function parseScalar(raw) {
   ) {
     return value.slice(1, -1);
   }
-  // Inline flow sequence, e.g. `scope: [design, merge, ops]`. Added for
-  // governance.gates.scope, the first array-valued key in the schema — without
-  // it the value parses as the literal string "[design, merge, ops]" and every
-  // scope check fails on a configuration that is actually correct.
+  // Inline flow sequence, e.g. `levels: [design, merge, ops]`. Without it an
+  // array value parses as the literal string "[design, merge, ops]" and every
+  // check against it fails on a configuration that is actually correct.
   if (value.startsWith('[') && value.endsWith(']')) {
     const inner = value.slice(1, -1).trim();
     return inner === '' ? [] : splitFlowItems(inner).map((item) => parseScalar(item));
@@ -178,7 +189,9 @@ export function validateProbeConfig(config, options = {}) {
   const expectedVersion = options.expectedVersion;
 
   for (const key of Object.keys(config)) {
-    if (!topLevelKeys.has(key)) errors.push(`Unknown top-level key: ${key}`);
+    if (topLevelKeys.has(key)) continue;
+    const removed = removedTopLevelKeys.get(key);
+    errors.push(removed ? `${key}: ${removed}` : `Unknown top-level key: ${key}`);
   }
   if (config.schemaVersion !== 1) errors.push('schemaVersion must be 1.');
   if (!semverPattern.test(config.probeVersion ?? '')) {
@@ -190,6 +203,31 @@ export function validateProbeConfig(config, options = {}) {
   }
   if (typeof config.profile !== 'string' || !config.profile) {
     warnings.push("profile is missing; PROBE will use 'generic'.");
+  }
+
+  // Application stacks for dev-track --stack routing. The list is the
+  // consumer's declaration of which stacks exist here; the first entry is the
+  // default. Shape-only validation — profile directories are plugin- or
+  // consumer-owned, so existence is checked by the skill that loads one.
+  if (config.stacks !== undefined) {
+    if (!Array.isArray(config.stacks) || config.stacks.length === 0) {
+      errors.push('stacks must be a non-empty list of profile names.');
+    } else {
+      for (const entry of config.stacks) {
+        if (typeof entry !== 'string' || !entry.trim()) {
+          errors.push('stacks entries must be non-empty profile names.');
+          break;
+        }
+      }
+      const seen = new Set();
+      for (const entry of config.stacks) {
+        if (seen.has(entry)) {
+          errors.push(`stacks lists '${entry}' more than once.`);
+          break;
+        }
+        seen.add(entry);
+      }
+    }
   }
 
   if (!config.paths || typeof config.paths !== 'object') {
@@ -242,52 +280,6 @@ export function validateProbeConfig(config, options = {}) {
     warnings.push(
       "Required knowledge is not using source 'claude-plugin'; verify the provider manually.",
     );
-  }
-
-  // Gate hibernation (PROBE policy P17). Hibernation suspends BLOCKING only, so
-  // it must never be declarable as an anonymous switch: a suspension with no
-  // named human and no reason is not a governance decision, and accepting one
-  // would turn the mechanism into exactly the silent waiver it exists to avoid.
-  const gates = config.governance?.gates;
-  if (gates !== undefined) {
-    if (!gateModes.has(gates.mode)) {
-      errors.push("governance.gates.mode must be 'active' or 'hibernated'.");
-    }
-    if (gates.mode === 'hibernated') {
-      const scope = Array.isArray(gates.scope) ? gates.scope : [];
-      if (scope.length === 0) {
-        errors.push('governance.gates.scope must list at least one gate when hibernated.');
-      }
-      for (const entry of scope) {
-        if (!gateScopes.has(entry)) {
-          errors.push(`governance.gates.scope has unknown gate '${entry}'.`);
-        }
-      }
-      for (const field of ['name', 'email', 'role']) {
-        if (!gates.authorizedBy?.[field]) {
-          errors.push(`governance.gates.authorizedBy.${field} is required when hibernated.`);
-        }
-      }
-      if (!gates.reason) errors.push('governance.gates.reason is required when hibernated.');
-      if (!datePattern.test(gates.since ?? '')) {
-        errors.push('governance.gates.since must be YYYY-MM-DD when hibernated.');
-      }
-      for (const field of ['until', 'reviewOn']) {
-        const value = gates[field];
-        if (value !== undefined && value !== null && !datePattern.test(String(value))) {
-          errors.push(`governance.gates.${field} must be YYYY-MM-DD or null.`);
-        }
-      }
-      // An expired hibernation is reported, never silently honoured.
-      if (datePattern.test(String(gates.until ?? '')) && options.today) {
-        if (String(gates.until) < options.today) {
-          warnings.push(
-            `Gate hibernation expired on ${gates.until}; gates are active. ` +
-              'Renew governance.gates.until or set mode to active.',
-          );
-        }
-      }
-    }
   }
 
   return { errors, warnings };

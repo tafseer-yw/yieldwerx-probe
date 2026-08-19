@@ -25,7 +25,7 @@ scripts, reads the actual diff hunks, classifies each change (locator /
 chart-contract / flow drift — the last one is what stales _manual_ cases,
 which no static tool sees), and writes a report with **proposed fixes**.
 Proposals are never auto-applied — humans decide, and substantive script
-changes still pass Script Audit. Silent self-healing is deliberately not
+changes still pass the advisory script review. Silent self-healing is deliberately not
 used: it hides contract breaks instead of fixing tests before the push.
 
 ## Executable example 1 — a dev renames a testId

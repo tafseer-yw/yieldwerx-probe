@@ -133,3 +133,10 @@ reach, never evidence quality.
   still a `blocker`; the route is a recorded human waiver, not a re-grade.
 - Report every surface you could not reach, so a reader knows the review's
   coverage rather than assuming it was complete.
+
+## Closing state
+
+End in exactly one of the four D12 states — `COMPLETE` /
+`COMPLETE_WITH_NOTES` / `BLOCKED` / `NEEDS_INFO` — with the real verification
+output attached to `COMPLETE` and a recommended answer attached to
+`NEEDS_INFO`. Never report `COMPLETE` for work whose verification was not run.

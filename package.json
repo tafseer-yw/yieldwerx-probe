@@ -1,6 +1,6 @@
 {
   "name": "@yieldwerx/probe-cli",
-  "version": "2.13.2",
+  "version": "3.1.0",
   "private": false,
   "description": "Source, validation and distribution repository for the YieldWerx PROBE process.",
   "author": {
@@ -16,7 +16,9 @@
     "plugins/yieldwerx-probe/lib/",
     "plugins/yieldwerx-probe/scripts/",
     "plugins/yieldwerx-probe/adapters/aio/",
+    "plugins/yieldwerx-probe/adapters/mcp/",
     "plugins/yieldwerx-probe/skills/probe-spec/scripts/",
+    "plugins/yieldwerx-probe/skills/forge-prd/scripts/",
     "config/probe-config.schema.json",
     "README.md",
     "LICENSE.md",
@@ -28,9 +30,14 @@
     "validate:reconciliation": "node plugins/yieldwerx-probe/skills/probe-spec/scripts/validate-spec-reconciliation.mjs",
     "test:spec-validator": "node scripts/test-spec-validator.mjs && node scripts/test-spec-reconciliation-validator.mjs",
     "test:cli": "node scripts/test-cli.mjs",
-    "test:owner-bypass": "node scripts/test-owner-bypass.mjs",
-    "test": "npm run validate && npm run test:spec-validator && npm run test:cli && npm run test:owner-bypass && npm run test:guards",
-    "test:guards": "node scripts/test-guards.mjs"
+    "test": "npm run validate && npm run test:spec-validator && npm run test:prd-validator && npm run test:cli && npm run test:guards && npm run test:aio-payload && npm run test:mcp",
+    "test:guards": "node scripts/test-guards.mjs",
+    "test:aio-payload": "node --experimental-strip-types scripts/test-aio-payload.mjs",
+    "format": "npx --yes prettier@3 --write \"scripts/**/*.mjs\" \"bin/*.mjs\" \"plugins/**/*.mjs\"",
+    "format:check": "npx --yes prettier@3 --check \"scripts/**/*.mjs\" \"bin/*.mjs\" \"plugins/**/*.mjs\"",
+    "test:mcp": "node scripts/test-mcp-server.mjs",
+    "validate:prd": "node plugins/yieldwerx-probe/skills/forge-prd/scripts/validate-prd.mjs",
+    "test:prd-validator": "node scripts/test-prd-validator.mjs"
   },
   "engines": {
     "node": ">=22.18"

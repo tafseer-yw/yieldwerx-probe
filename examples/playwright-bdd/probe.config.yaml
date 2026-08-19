@@ -1,5 +1,5 @@
 schemaVersion: 1
-probeVersion: 2.13.2
+probeVersion: 3.1.0
 profile: playwright-bdd
 
 paths:
@@ -25,6 +25,14 @@ commands:
   uiCheck: npm run ui:check
   uiImpact: npm run ui:impact
 
+  # Security scanning (adapter contract: references/integrations/security-tools.md).
+  # PLACEHOLDERS — replace the tool invocations and the URL with this consumer's
+  # real ones before use. PROBE never guesses a command: a wrong port here is
+  # worse than an absent key, because an absent key is reported unavailable
+  # while a wrong one fails in a way that looks like the tool's fault.
+  securityDeps: <your dependency scanner, e.g. osv-scanner scan --lockfile package-lock.json>
+  securitySast: <your static analyser, e.g. semgrep --config auto --error>
+  securityFuzz: <your API fuzzer against this app's OpenAPI document>
 integrations:
   caseManagement:
     provider: aio
@@ -48,11 +56,3 @@ policies:
   preserveManualTag: true
   testIdRequired: true
   wrongBusinessDataSeverity: blocker
-
-# Gate hibernation — suspends BLOCKING only. Evidence is still assembled, the
-# readiness verdict is still honest, and no gate is ever reported as approved.
-# Omit this block entirely for normal gated delivery (the default).
-# Authority: references/governance/gate-hibernation.md
-governance:
-  gates:
-    mode: active # active | hibernated

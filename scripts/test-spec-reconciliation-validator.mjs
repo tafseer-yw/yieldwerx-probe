@@ -14,13 +14,7 @@ const validator = path.join(
   'scripts',
   'validate-spec-reconciliation.mjs',
 );
-const fixture = path.join(
-  root,
-  'tests',
-  'fixtures',
-  'spec-analysis',
-  'valid-reconciliation.md',
-);
+const fixture = path.join(root, 'tests', 'fixtures', 'spec-analysis', 'valid-reconciliation.md');
 
 function run(file) {
   return spawnSync(process.execPath, [validator, file], {
@@ -59,7 +53,10 @@ try {
   const missingReplacementPath = path.join(work, 'missing-replacement.md');
   await writeFile(missingReplacementPath, source.replace('AC-02 → AC-09', 'AC-02'));
   const missingReplacement = run(missingReplacementPath);
-  assert(missingReplacement.status !== 0, 'A meaning change without a replacement ID was accepted.');
+  assert(
+    missingReplacement.status !== 0,
+    'A meaning change without a replacement ID was accepted.',
+  );
   assert(
     missingReplacement.stderr.includes(
       'AC-02 meaning-changed must name both old and new IDs with old → new.',

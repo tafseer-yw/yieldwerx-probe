@@ -1,4 +1,10 @@
 import { readFile } from 'node:fs/promises';
+import {
+  vagueWords,
+  technicalWordIssue,
+  parseTermsTable,
+  plainLanguageIssues,
+} from '../../../scripts/lib/plain-language.mjs';
 
 const filePath = process.argv[2];
 if (!filePath) {
@@ -28,6 +34,7 @@ const section = (name) => {
 const requiredSections = [
   'Summary',
   'Sources and revisions',
+  'Terms',
   'Testable categories',
   'Acceptance criteria',
   'Other things to consider',
@@ -159,18 +166,56 @@ for (const match of acceptanceText.matchAll(definitionPattern)) {
   const summaryLines = [...body.matchAll(/^\*\*Summary:\*\*\s*(.*?)\s*$/gm)].map((item) =>
     item[1].trim(),
   );
+  const plainWords = [
+    ...body.matchAll(/^\*\*In plain words:\*\*\s*([\s\S]*?)(?=^\*\*|^```|$(?![\s\S]))/gm),
+  ].map((item) => item[1].trim());
   const gherkinBlocks = [...body.matchAll(/```gherkin\s*([\s\S]*?)```/gi)].map((item) =>
     item[1].trim(),
   );
   const current = definitions.get(id) ?? [];
   const definitionSource = body.match(/^\*\*Source:\*\*\s*(.*?)\s*$/im)?.[1]?.trim();
-  current.push({ format, summaryLines, gherkinBlocks, definitionSource, body });
+  current.push({ format, summaryLines, plainWords, gherkinBlocks, definitionSource, body });
   definitions.set(id, current);
 }
 
-const vagueWords = /\b(fast|easy|properly|correctly|seamless|intuitive|user-friendly)\b/i;
-const technicalWords =
-  /\b(payload|persisted|persistence|DOM|locator|XPath|CSS selector|method|class|database schema|idempotent|operationalize|leverage)\b/i;
+/**
+ * Terms the provided requirement itself uses, from the `## Terms` table. A term
+ * listed here may appear in its source form anywhere in the analysis; that is the
+ * whole point of requiring the table.
+ */
+const termsText = section('Terms');
+const { declaredTerms, header: termsHeader, hasTable: termsHasTable } = parseTermsTable(termsText);
+
+if (termsText.trim() && !termsHasTable) {
+  errors.push("The Terms section needs a table of the source's own words.");
+} else if (termsHeader) {
+  for (const column of ['Term', 'Plain meaning', 'Source']) {
+    if (!termsHeader.toLowerCase().includes(column.toLowerCase())) {
+      errors.push(`The Terms table needs a "${column}" column.`);
+    }
+  }
+}
+
+/**
+ * Check one piece of prose for invented acronyms and banned abbreviations.
+ * `where` names the field so the message says exactly what to fix. Detection is
+ * the shared module's; this function owns only the Spec Probe message wording.
+ */
+function checkPlainLanguage(id, where, text) {
+  for (const issue of plainLanguageIssues(text, declaredTerms)) {
+    if (issue.type === 'acronym') {
+      errors.push(
+        `${id} ${where} uses "${issue.token}", which the provided requirement does not define. ` +
+          'Write the words out in full, or add a Terms row citing where the source uses it.',
+      );
+    } else {
+      errors.push(
+        `${id} ${where} abbreviates "${issue.token}". Write the whole word, or add a Terms ` +
+          'row if the provided requirement uses that short form itself.',
+      );
+    }
+  }
+}
 
 for (const row of indexRows) {
   const items = definitions.get(row.id) ?? [];
@@ -203,6 +248,78 @@ for (const row of indexRows) {
       );
     } else if (!/^Verify that \S/.test(definition.summaryLines[0])) {
       errors.push(`${row.id} summary must start with "Verify that ".`);
+    } else {
+      const summary = definition.summaryLines[0];
+      const words = summary.split(/\s+/).filter(Boolean).length;
+      if (words > 30) {
+        errors.push(`${row.id} summary is ${words} words. Keep it to one sentence of 20 or fewer.`);
+      } else if (words > 20) {
+        warnings.push(`${row.id} summary is ${words} words. Aim for 20 or fewer.`);
+      }
+      // The summary is what a QA and a product owner read first, so jargon here
+      // is an error rather than the warning it is elsewhere. "Stating simple
+      // requirements in technical jargon" is one of the three habits these rules
+      // exist to stop, and warning about it is what let it persist.
+      const technicalSummary = technicalWordIssue(summary, declaredTerms);
+      if (technicalSummary) {
+        errors.push(
+          `${row.id} summary uses the technical word "${technicalSummary}". Say it the way ` +
+            'you would say it aloud, unless the approved requirement is itself about that ' +
+            'technical item.',
+        );
+      }
+      checkPlainLanguage(row.id, 'summary', summary);
+    }
+
+    // Every criterion carries an explanation for a reader with no domain
+    // knowledge. Without it the analysis is only usable by whoever already knows
+    // the product, which is the audience least in need of it.
+    if (definition.plainWords.length !== 1) {
+      errors.push(
+        `${row.id} needs exactly one "**In plain words:**" explanation for a reader ` +
+          'with no domain knowledge; found ' +
+          `${definition.plainWords.length}.`,
+      );
+    } else {
+      const explanation = definition.plainWords[0];
+      const sentences = explanation.split(/(?<=[.!?])\s+(?=[A-Z"'`(])/).filter((s) => s.trim());
+      if (explanation.split(/\s+/).filter(Boolean).length < 8) {
+        errors.push(
+          `${row.id} "In plain words" is too short to explain anything. Write one to ` +
+            'three sentences saying what the thing is, why it matters, and what a tester ' +
+            'would see.',
+        );
+      } else if (sentences.length > 3) {
+        warnings.push(
+          `${row.id} "In plain words" runs to ${sentences.length} sentences. Three is the ceiling.`,
+        );
+      }
+      if (definition.summaryLines.length === 1) {
+        const normalize = (value) =>
+          value
+            .replace(/^Verify that /i, '')
+            .replace(/[^a-z0-9 ]/gi, '')
+            .trim()
+            .toLowerCase();
+        if (normalize(explanation).startsWith(normalize(definition.summaryLines[0]))) {
+          errors.push(
+            `${row.id} "In plain words" restates the summary. It must add understanding a ` +
+              'reader without domain knowledge does not have.',
+          );
+        }
+      }
+      const vagueExplanation = explanation.match(vagueWords)?.[0];
+      if (vagueExplanation) {
+        errors.push(`${row.id} "In plain words" uses the unclear word "${vagueExplanation}".`);
+      }
+      const technicalExplanation = technicalWordIssue(explanation, declaredTerms);
+      if (technicalExplanation) {
+        errors.push(
+          `${row.id} "In plain words" uses the technical word "${technicalExplanation}". ` +
+            'This line is for a reader with no domain knowledge.',
+        );
+      }
+      checkPlainLanguage(row.id, '"In plain words"', explanation);
     }
 
     if (definition.gherkinBlocks.length !== 1) {
@@ -222,6 +339,8 @@ for (const row of indexRows) {
     if (given >= 0 && when >= 0 && then >= 0 && !(given < when && when < then)) {
       errors.push(`${row.id} ${formatName} must use Given, then When, then Then.`);
     }
+
+    checkPlainLanguage(row.id, 'Gherkin steps', gherkin);
 
     if (definition.format === 'simple rule' && then >= 0) {
       const outcomeLines = gherkin
@@ -244,7 +363,7 @@ for (const row of indexRows) {
       `${row.id} uses the unclear word "${vague}". Replace it with something a QA can measure or see.`,
     );
   }
-  const technical = definition.body.match(technicalWords)?.[0];
+  const technical = technicalWordIssue(definition.body, declaredTerms);
   if (technical) {
     warnings.push(
       `${row.id} uses the technical word "${technical}". Use a product word unless the approved requirement needs it.`,
@@ -281,6 +400,10 @@ for (const column of [
   'Test data needed',
   'How to know the correct result',
   'Difficulty',
+  // Case Forge designs every category at the UI *and* API layer, and needs to be
+  // told what the API layer is. Without this column it has to guess, and guessing
+  // an operation is how an invented endpoint reaches a test case.
+  'Service surface',
 ]) {
   if (!catHeader.toLowerCase().includes(column.toLowerCase())) {
     errors.push(`The Testable categories table needs a "${column}" column.`);

@@ -176,7 +176,7 @@ try {
     source.replace(
       [
         '```gherkin',
-        'Given The user is on the Edit Profile screen',
+        'Given The user is on the "Edit Profile" screen',
         'When The user selects a profile picture',
         'Then The picture must be in `.png` or `.jpeg` format',
         'And Every other file type must be rejected',
@@ -194,10 +194,138 @@ try {
     legacyChecklist.stderr.includes('AC-02 needs exactly one fenced gherkin block.'),
     `Legacy-checklist message was not clear:\n${legacyChecklist.stderr}`,
   );
+  // --- Plain language (P13) -------------------------------------------------
+  // These four were advisory prose for four minor versions and drifted every
+  // time. Each case is one of the habits the rules exist to stop.
+
+  // An acronym the provided requirement never uses. This is the most common
+  // failure: the analysis coins private vocabulary that exists nowhere in the
+  // product, and a tester cannot find the control being described.
+  const inventedAcronymPath = path.join(work, 'invented-acronym.md');
+  await writeFile(
+    inventedAcronymPath,
+    source.replace(
+      'Verify that a user can save a valid profile picture.',
+      'Verify that a user can save a valid PPIC through the EPS screen.',
+    ),
+  );
+  const inventedAcronym = run(inventedAcronymPath);
+  assert(inventedAcronym.status !== 0, 'An invented acronym was accepted.');
+  assert(
+    inventedAcronym.stderr.includes('AC-01 summary uses "PPIC"'),
+    `Invented-acronym message was not clear:\n${inventedAcronym.stderr}`,
+  );
+
+  // The same short form is legal once the provided requirement uses it and a
+  // Terms row cites where — that is what the table is for.
+  const declaredAcronymPath = path.join(work, 'declared-acronym.md');
+  await writeFile(
+    declaredAcronymPath,
+    source
+      .replace(
+        '| Profile picture                        |',
+        "| PPIC                                   | The source's short form for the profile picture. | §3.1   |\n| Profile picture                        |",
+      )
+      .replace(
+        'Verify that a user can save a valid profile picture.',
+        'Verify that a user can save a valid PPIC.',
+      ),
+  );
+  const declaredAcronym = run(declaredAcronymPath);
+  assert(
+    declaredAcronym.status === 0,
+    `A source-defined acronym with a Terms row was rejected:\n${declaredAcronym.stderr}`,
+  );
+
+  // A criterion with no explanation for a reader outside the domain.
+  const missingPlainWordsPath = path.join(work, 'missing-plain-words.md');
+  await writeFile(
+    missingPlainWordsPath,
+    source.replace(
+      '**In plain words:** Every user has a small image shown next to their name. This\nlets them replace it with a picture from their own computer, as long as the file is\na supported image type and is not too large.\n',
+      '',
+    ),
+  );
+  const missingPlainWords = run(missingPlainWordsPath);
+  assert(
+    missingPlainWords.status !== 0,
+    'A criterion with no plain-words explanation was accepted.',
+  );
+  assert(
+    missingPlainWords.stderr.includes('AC-01 needs exactly one "**In plain words:**"'),
+    `Missing-plain-words message was not clear:\n${missingPlainWords.stderr}`,
+  );
+
+  // An explanation that only restates the summary explains nothing.
+  const restatedPlainWordsPath = path.join(work, 'restated-plain-words.md');
+  await writeFile(
+    restatedPlainWordsPath,
+    source.replace(
+      '**In plain words:** Every user has a small image shown next to their name. This\nlets them replace it with a picture from their own computer, as long as the file is\na supported image type and is not too large.',
+      '**In plain words:** A user can save a valid profile picture on the profile screen when they choose one.',
+    ),
+  );
+  const restatedPlainWords = run(restatedPlainWordsPath);
+  assert(restatedPlainWords.status !== 0, 'A plain-words line restating the summary was accepted.');
+  assert(
+    restatedPlainWords.stderr.includes('AC-01 "In plain words" restates the summary'),
+    `Restated-plain-words message was not clear:\n${restatedPlainWords.stderr}`,
+  );
+
+  // A shortened word inside a Gherkin step.
+  const abbreviatedStepPath = path.join(work, 'abbreviated-step.md');
+  await writeFile(
+    abbreviatedStepPath,
+    source.replace(
+      'When The user clicks the "Save Profile" button',
+      'When The user clicks the "Save Profile" button with the default config',
+    ),
+  );
+  const abbreviatedStep = run(abbreviatedStepPath);
+  assert(abbreviatedStep.status !== 0, 'An abbreviation inside a Gherkin step was accepted.');
+  assert(
+    abbreviatedStep.stderr.includes('abbreviates "config"'),
+    `Abbreviation message was not clear:\n${abbreviatedStep.stderr}`,
+  );
+
+  // A simple requirement restated as architecture. This is the third reported
+  // habit, and it was a warning for four minor versions, which is exactly how it
+  // survived.
+  const jargonSummaryPath = path.join(work, 'jargon-summary.md');
+  await writeFile(
+    jargonSummaryPath,
+    source.replace(
+      'Verify that a user can save a valid profile picture.',
+      'Verify that profile image persistence is enforced on save.',
+    ),
+  );
+  const jargonSummary = run(jargonSummaryPath);
+  assert(jargonSummary.status !== 0, 'A jargon summary was accepted.');
+  assert(
+    jargonSummary.stderr.includes('AC-01 summary uses the technical word "persistence"'),
+    `Jargon-summary message was not clear:\n${jargonSummary.stderr}`,
+  );
+
+  // The Terms section is required, because it is simultaneously the reader's
+  // glossary and the acronym allowlist.
+  const missingTermsPath = path.join(work, 'missing-terms.md');
+  await writeFile(
+    missingTermsPath,
+    source.replace(/## Terms[\s\S]*?(?=## Testable categories)/, ''),
+  );
+  const missingTerms = run(missingTermsPath);
+  assert(missingTerms.status !== 0, 'An analysis with no Terms section was accepted.');
+  assert(
+    missingTerms.stderr.includes('The "Terms" section is missing.'),
+    `Missing-Terms message was not clear:\n${missingTerms.stderr}`,
+  );
 } finally {
   await rm(work, { recursive: true, force: true });
 }
 
 process.stdout.write(
-  'Spec validator tests passed: PRD authority, reference-only knowledge, valid Gherkin ACs, missing steps, summary format, legacy checklist, and weak rule.\n',
+  'Spec validator tests passed: PRD authority, reference-only knowledge, valid Gherkin ACs, ' +
+    'missing steps, summary format, legacy checklist, weak rule, invented vs source-defined ' +
+    'acronyms, missing and restated plain-words explanations, abbreviated steps, jargon ' +
+    'summaries, and the required Terms section.\n',
 );
