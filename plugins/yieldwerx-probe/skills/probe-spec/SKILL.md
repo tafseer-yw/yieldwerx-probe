@@ -2,7 +2,7 @@
 name: probe-spec
 user-invocable: true
 description: Use when starting QA work on a new feature, analyzing a provided PRD/story/specification, migrating an older spec-analysis artifact to the current AC format, or reconciling an existing analysis with a revised approved requirement document — treats the provided requirement package as the sole requirement source of truth; uses the YieldWerx knowledgebase only for terminology and business context; writes every acceptance criterion with a "Verify that ..." summary, a plain-words explanation for a reader with no domain knowledge, and Given/When/Then steps; copies every control and product name verbatim from the source and never invents an acronym; preserves stable IDs and reports downstream impact. The shared entry point of BOTH tracks: dev and QA read the same analysis, and whoever runs it second reads the existing artifact rather than regenerating it. PROBE Spec Probe stage.
-track: shared
+track: cross
 safety: writes-local
 produces: .probe/artifacts/<feature>/10-spec/spec-analysis.md, optional .probe/artifacts/<feature>/10-spec/spec-reconciliation.md, docs/qa/<feature>/LEDGER.md
 consumes: PRD / user story / spec document (path or pasted text), optional existing spec-analysis.md

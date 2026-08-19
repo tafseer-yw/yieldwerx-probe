@@ -12,7 +12,7 @@ OWASP 2025 security.
 
 ### Shared
 
-- **`/probe-spec` is now `track: shared`.** One `spec-analysis.md` per feature,
+- **`/probe-spec` is now `track: cross`.** One `spec-analysis.md` per feature,
   jointly owned; whoever runs it second reads the existing analysis (the
   unqualified rerun already fails closed), and a requirement change goes through
   `--reconcile`, reporting downstream impact to both tracks. New policies D10
@@ -107,6 +107,14 @@ OWASP 2025 security.
 ### Housekeeping
 
 - 31 → 42 skills, 13 → 17 agents.
+- `track: shared` folded into the pre-existing `track: cross`. Two labels for
+  "serves both tracks" is the same fragmentation this release removes elsewhere;
+  `cross` wins because it was there first and because CARES and SIFT both use it,
+  so one word now means one thing across all three plugins.
+- `track: shared` folded into the pre-existing `track: cross`. Two labels for
+  "serves both tracks" is the same fragmentation this release removes elsewhere;
+  `cross` wins because it was there first and because CARES and SIFT both use it,
+  so one word now means one thing across all three plugins.
 - probe-lab's `probe.config.yaml`: `probeVersion` 2.13.0 → 3.1.0, the removed
   `governance.gates` block deleted, a `stacks: [node-ts-spa]` declaration added.
 

@@ -235,7 +235,7 @@ evidence of how existing code works.
 
 ### D10 — Spec Probe is shared, and the analysis is jointly owned
 
-`/probe-spec` belongs to both tracks (`track: shared`). One `spec-analysis.md`
+`/probe-spec` belongs to both tracks (`track: cross`). One `spec-analysis.md`
 exists per feature; dev and QA read the same one, whoever runs it second reads
 the existing artifact (the unqualified rerun fails closed), and a requirement
 change goes through `--reconcile` so the downstream impact lands on both tracks

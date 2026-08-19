@@ -2,7 +2,7 @@
 name: handoff
 user-invocable: true
 description: Use when work must stop before it is finished — end of day, a context limit, a switch to something urgent. Writes the picture the NEXT session needs: what changed, what is verified with the real command output, what is still red, decisions not to relitigate, approaches already rejected, and one concrete next step with a resume command. Also lists and closes open handoffs. Facts are established from git and real verification output, never from memory of the conversation.
-track: shared
+track: cross
 safety: writes-local
 produces: .probe/artifacts/handoffs/<slug>.md
 consumes: the state of the current session and working tree

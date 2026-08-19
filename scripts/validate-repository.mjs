@@ -1110,7 +1110,7 @@ requireContent('plugins/yieldwerx-probe/skills/forge-prd/scripts/validate-prd.mj
 // that keep dev and QA on one requirement and one skill set. Pin them so a
 // future edit cannot quietly fork the analysis or hardcode a stack.
 requireContent('plugins/yieldwerx-probe/skills/probe-spec/SKILL.md', [
-  'track: shared',
+  'track: cross',
   '## One analysis, two tracks',
   '**Neither track regenerates it.**',
   'Run by: <name>',
