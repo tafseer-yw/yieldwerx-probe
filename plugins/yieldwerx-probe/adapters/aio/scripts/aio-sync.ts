@@ -16,8 +16,8 @@
  *   - Live requires `--live` (or AIO_SYNC_MODE=live) AND complete config/env:
  *     an HTTPS apiBaseUrl, a real projectKey, and AIO_API_TOKEN (+ AIO_EMAIL
  *     for basic auth). Fails closed on partial config.
- *   - Live refuses a scope without recorded human Design Gate approval or an
- *     explicit allrounder gate bypass — only human-authorized cases reach AIO.
+ *   - Live refuses a scope without a recorded human Design Gate approval in the
+ *     ledger's Gate approvals table — only human-authorized cases reach AIO.
  *     With `--category CAT-NN` the scope narrows to
  *     that category's scenarios and the gate check switches to that category's
  *     row in the ledger's per-category Design Gate table, so team members can
@@ -219,13 +219,92 @@ function parseFeature(file: string): Scenario[] {
  * The live feature-level Design Gate row in the ledger's stage table.
  *
  * Located and read by its OWN cells rather than by pattern-matching the file. A
- * ledger that honestly documents its gate history necessarily contains lines like
- * "W-01 — Design Gate signed by an allrounder solo"; a whole-file regex treats such
- * a waiver — recording a signature the ledger elsewhere declares spent — as a live
+ * ledger that honestly documents its gate history necessarily contains lines
+ * describing past decisions; a whole-file regex would treat such a line as a live
  * authorization for a destructive push. Rows struck through with `~~` are
  * superseded and skipped.
  */
-function readDesignGateRow(slug: string): string | null {
+interface GateApprovalRow {
+  gate: string;
+  scope: string;
+  approvedBy: string;
+  role: string;
+  timestamp: string;
+}
+
+/** A cell that carries no real value — an empty template row or a placeholder. */
+const isBlankCell = (value: string): boolean =>
+  value === '' || /^(_+|—|–|-+|n\/?a|tbd|pending)$/i.test(value.trim());
+
+/** A timestamp cell must carry at least a YYYY-MM-DD date. */
+const hasTimestamp = (value: string): boolean => /\d{4}-\d{2}-\d{2}/.test(value);
+
+/**
+ * Read the ledger's **Gate approvals** table. The table is located by its header
+ * (a row carrying `Gate`, `Approved by`, and `Timestamp`); columns are mapped by
+ * header name so column order is free.
+ */
+function readGateApprovals(slug: string): GateApprovalRow[] | null {
+  const ledger = path.join(REPO_ROOT, 'docs', 'qa', slug, 'LEDGER.md');
+  if (!fs.existsSync(ledger)) return null;
+  const rows: GateApprovalRow[] = [];
+  let cols: { gate: number; scope: number; approvedBy: number; role: number; timestamp: number } | null =
+    null;
+  // `cols` is reset at every table boundary, so it cannot double as "an
+  // approvals table exists here". This flag records that it was seen at least
+  // once, so a present-but-empty table returns [] (blocks the legacy fallback)
+  // rather than null (no table → legacy stage-row read).
+  let sawApprovalsTable = false;
+  for (const line of fs.readFileSync(ledger, 'utf-8').split('\n')) {
+    // A markdown table is a contiguous block of pipe rows; any non-pipe line
+    // ends it. Resetting here bounds parsing to the approvals table itself, so
+    // a later stage-table row (which also carries "DESIGN GATE") can never be
+    // read as an approval from an otherwise-empty approvals table.
+    if (!line.trim().startsWith('|')) {
+      cols = null;
+      continue;
+    }
+    const cells = rowCells(line);
+    const lower = cells.map((c) => c.toLowerCase());
+    if (lower.includes('gate') && lower.includes('approved by') && lower.includes('timestamp')) {
+      cols = {
+        gate: lower.indexOf('gate'),
+        scope: lower.indexOf('scope'),
+        approvedBy: lower.indexOf('approved by'),
+        role: lower.indexOf('role'),
+        timestamp: lower.indexOf('timestamp'),
+      };
+      sawApprovalsTable = true;
+      continue;
+    }
+    if (!cols) continue;
+    if (line.includes('~~')) continue;
+    // Skip the header divider row (all cells are dashes).
+    if (cells.every((c) => /^-+$/.test(c) || c === '')) continue;
+    rows.push({
+      gate: (cells[cols.gate] ?? '').replace(/[*`]/g, '').trim(),
+      scope: cols.scope >= 0 ? (cells[cols.scope] ?? '').trim() : '',
+      approvedBy: (cells[cols.approvedBy] ?? '').trim(),
+      role: cols.role >= 0 ? (cells[cols.role] ?? '').trim() : '',
+      timestamp: cols.timestamp >= 0 ? (cells[cols.timestamp] ?? '').trim() : '',
+    });
+  }
+  // `null` means the ledger predates the Gate approvals table entirely — the only
+  // state in which the legacy fallback below may speak. An empty array means the
+  // table is there and holds no approval, which is a definitive "not approved".
+  return sawApprovalsTable ? rows : null;
+}
+
+/**
+ * Legacy fallback: the pre-3.0 stage-table Design Gate row.
+ *
+ * Ledgers created before the human-gate model recorded the decision as the stage
+ * row's status. A genuine human approval there still authorizes a push, so old
+ * features keep working without rewriting their history. `bypassed`, `waived`, and
+ * `hibernated` are deliberately NOT accepted: those mechanisms no longer exist, and
+ * silently honouring one would let a retired override authorize a live write.
+ */
+function readLegacyDesignGateStatus(slug: string): string | null {
   const ledger = path.join(REPO_ROOT, 'docs', 'qa', slug, 'LEDGER.md');
   if (!fs.existsSync(ledger)) return null;
   for (const line of fs.readFileSync(ledger, 'utf-8').split('\n')) {
@@ -240,28 +319,38 @@ function readDesignGateRow(slug: string): string | null {
 }
 
 /**
- * The feature-level Design Gate authorizes a live push when its own status cell
- * records a human approval, or an explicit allrounder bypass whose supporting
- * waiver names the role and the recording method.
+ * The feature-level Design Gate authorizes a live push when the ledger's Gate
+ * approvals table carries a Design Gate row for the whole feature, naming a human
+ * and a timestamp. Authority:
+ * references/governance/human-gates.md.
  */
-function isDesignGateAuthorized(slug: string): boolean {
-  const status = readDesignGateRow(slug);
-  if (status === null) return false;
+export function isDesignGateAuthorized(slug: string): boolean {
+  const featureScope = (scope: string): boolean =>
+    isBlankCell(scope) || /^(feature|all|whole feature)$/i.test(scope);
+  const approvals = readGateApprovals(slug);
 
-  // Check the bypass first: it is the more specific state, and a bypass row
-  // legitimately explains itself using words like "not approved, not signed".
-  const bypassed = /\bbypassed\b|waived\s+[—-]\s+allrounder gate bypass/.test(status);
-  if (bypassed) {
-    // The waiver detail lives in the ledger's waiver table, so these two clauses
-    // are file-scoped by design; the DECISION above is row-scoped, which is the
-    // part that must not be satisfiable by superseded history.
-    const md = fs.readFileSync(path.join(REPO_ROOT, 'docs', 'qa', slug, 'LEDGER.md'), 'utf-8');
-    const namedAllrounder = /\b(QA Lead|Automation Engineer)\b/i.test(md);
-    const directRecord = /transcribed from direct allrounder gate bypass/i.test(md);
-    return namedAllrounder && directRecord;
+  // A ledger that HAS the Gate approvals table is answered by that table alone.
+  //
+  // The legacy fallback below must never reach a 3.0 ledger. Its stage table also
+  // carries a `DESIGN GATE | … | done` row — the gate skill sets it when it
+  // records an approval — so consulting the fallback here would let an empty
+  // approvals table plus a hand-edited progress status authorize a live push to
+  // the production Jira tenant. The approval row is the record; the stage status
+  // is progress tracking, and progress tracking authorizes nothing.
+  if (approvals !== null) {
+    return approvals.some(
+      (row) =>
+        /design gate/i.test(row.gate) &&
+        featureScope(row.scope) &&
+        !isBlankCell(row.approvedBy) &&
+        hasTimestamp(row.timestamp),
+    );
   }
 
-  return /\b(approved|signed|done)\b/.test(status);
+  const legacy = readLegacyDesignGateStatus(slug);
+  if (legacy === null) return false;
+  if (/\b(bypassed|waived|hibernated)\b/.test(legacy)) return false;
+  return /\b(approved|signed|done)\b/.test(legacy);
 }
 
 /**
@@ -273,10 +362,9 @@ function isDesignGateAuthorized(slug: string): boolean {
 interface CategoryGateRow {
   category: string;
   acs: Set<string>;
-  signedBy: string;
+  approvedBy: string;
   role: string;
-  decision: string;
-  recordedBy: string;
+  timestamp: string;
 }
 
 /** Expand an AC-set cell — "AC-01..AC-06" and/or "AC-01, AC-03" — into ids. */
@@ -306,68 +394,67 @@ const rowCells = (line: string): string[] =>
 
 /**
  * Read one category's row from the ledger's per-category Design Gate table.
- * The table is located by its header (a row carrying `Category`, `Signed by`,
- * and `Decision`); columns are mapped by header name so column order is free.
+ * The table is located by its header (a row carrying `Category`, `Approved by`,
+ * and `Timestamp`); columns are mapped by header name so column order is free.
  * Returns null when no ledger, no such table, or no matching category row.
  */
-function readCategoryGate(slug: string, category: string): CategoryGateRow | null {
+export function readCategoryGate(slug: string, category: string): CategoryGateRow | null {
   const ledger = path.join(REPO_ROOT, 'docs', 'qa', slug, 'LEDGER.md');
   if (!fs.existsSync(ledger)) return null;
   const cat = category.toUpperCase();
   let cols: {
     category: number;
     acs: number;
-    signedBy: number;
+    approvedBy: number;
     role: number;
-    decision: number;
-    recordedBy: number;
+    timestamp: number;
   } | null = null;
   for (const line of fs.readFileSync(ledger, 'utf-8').split('\n')) {
-    if (!line.trim().startsWith('|')) continue;
+    // Non-pipe line ends the table (bounds parsing to the per-category table).
+    if (!line.trim().startsWith('|')) {
+      cols = null;
+      continue;
+    }
     const cells = rowCells(line);
     const lower = cells.map((c) => c.toLowerCase());
-    if (lower.includes('category') && lower.includes('signed by') && lower.includes('decision')) {
+    if (
+      lower.includes('category') &&
+      lower.includes('approved by') &&
+      lower.includes('timestamp')
+    ) {
       cols = {
         category: lower.indexOf('category'),
         acs: lower.indexOf('acs'),
-        signedBy: lower.indexOf('signed by'),
+        approvedBy: lower.indexOf('approved by'),
         role: lower.indexOf('role'),
-        decision: lower.indexOf('decision'),
-        recordedBy: lower.indexOf('recorded by'),
+        timestamp: lower.indexOf('timestamp'),
       };
       continue;
     }
     if (!cols) continue;
+    // A struck-through (superseded) row is history, not a live approval — the
+    // same guard readGateApprovals applies. Without it a revoked category
+    // approval would authorize a live production push.
+    if (line.includes('~~')) continue;
     if ((cells[cols.category] ?? '').toUpperCase() !== cat) continue;
     return {
       category: cat,
       acs: parseAcSet(cols.acs >= 0 ? (cells[cols.acs] ?? '') : ''),
-      signedBy: cells[cols.signedBy] ?? '',
-      role: cols.role >= 0 ? (cells[cols.role] ?? '') : '',
-      decision: (cells[cols.decision] ?? '').toLowerCase(),
-      recordedBy: cols.recordedBy >= 0 ? (cells[cols.recordedBy] ?? '') : '',
+      approvedBy: (cells[cols.approvedBy] ?? '').trim(),
+      role: cols.role >= 0 ? (cells[cols.role] ?? '').trim() : '',
+      timestamp: cols.timestamp >= 0 ? (cells[cols.timestamp] ?? '').trim() : '',
     };
   }
   return null;
 }
 
 /**
- * A category is authorized by a named human approval or by an explicit,
- * recorded allrounder gate bypass.
+ * A category is authorized when its row names a human and carries a timestamp —
+ * the same check the feature-level gate makes, scoped to one category.
  */
-function isCategoryGateAuthorized(row: CategoryGateRow | null): boolean {
+export function isCategoryGateAuthorized(row: CategoryGateRow | null): boolean {
   if (!row) return false;
-  const signed = row.signedBy !== '' && !/^(_+|—|-|n\/?a|tbd|pending)$/i.test(row.signedBy);
-  const approved = /\bapproved\b/.test(row.decision) && !/reject/.test(row.decision);
-  const bypassed = /\bbypassed\b/.test(row.decision);
-  if (!signed || (!approved && !bypassed)) return false;
-  if (!/\bclaude\b/i.test(row.recordedBy)) return approved;
-  return (
-    /^(QA Lead|Automation Engineer)$/i.test(row.role.trim()) &&
-    (approved
-      ? /transcribed from direct allrounder approval/i.test(row.recordedBy)
-      : /transcribed from direct allrounder gate bypass/i.test(row.recordedBy))
-  );
+  return !isBlankCell(row.approvedBy) && hasTimestamp(row.timestamp);
 }
 
 /** Resolve the AIO folder path for a feature from the template. */
@@ -1165,8 +1252,8 @@ async function main(): Promise<void> {
   if (!authorized && !validate) {
     problems.push(
       category
-        ? `${category} Design Gate row for "${slug}" has no recorded human approval or allrounder bypass in docs/qa/${slug}/LEDGER.md — authorize that category row (or pass --validate for a single-case connectivity test)`
-        : `Design Gate for "${slug}" has no recorded human approval or allrounder bypass — pass --validate for a single-case connectivity test`,
+        ? `${category} row for "${slug}" has no recorded human approval (a name plus a timestamp) in the per-category Design Gate table of docs/qa/${slug}/LEDGER.md — record the approval there (or pass --validate for a single-case connectivity test)`
+        : `Design Gate for "${slug}" has no recorded human approval (a name plus a timestamp) in the ledger's Gate approvals table — pass --validate for a single-case connectivity test`,
     );
   }
   if (problems.length > 0) {

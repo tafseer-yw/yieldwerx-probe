@@ -1,7 +1,7 @@
 ---
 name: testops-promote
 user-invocable: true
-description: Use after a signed or explicitly allrounder-bypassed Merge Gate to wire the feature's scenarios into the configured CI/CD and reporting stack — selected slices, isolated execution where required, fail-on-flake, quarantine policy, and durable PROBE evidence. PROBE TestOps Promotion stage.
+description: Use after a recorded human Merge Gate approval and an actual merge, to wire the feature's scenarios into the configured CI/CD and reporting stack — selected slices, isolated execution where required, fail-on-flake, quarantine policy, and durable PROBE evidence. PROBE TestOps Promotion stage.
 track: ops
 safety: writes-local
 produces: .probe/artifacts/<feature>/90-testops/testops.md; CI config changes on a branch
@@ -29,9 +29,8 @@ external result linkage, and time budgets for the feature's automated cases.
 
 ## When
 
-Run after the Merge Gate is signed or explicitly bypassed by a named
-allrounder, and after the automation is actually merged to the consumer
-repository's main integration branch.
+Run after the Merge Gate has a recorded human approval and the automation is
+actually merged to the consumer repository's main integration branch.
 
 ## Where
 
@@ -48,17 +47,13 @@ Make the merged scenarios part of the pipeline's steady state.
 
 ## Preconditions
 
-- Merge Gate signed, recorded as
-  `waived — allrounder gate bypass` (check the ledger), **or hibernated** — read
-  `governance.gates` in `probe.config.yaml`; authority is
-  `${CLAUDE_PLUGIN_ROOT}/references/governance/gate-hibernation.md`. When
-  `mode: hibernated` covers `merge` and `until` has not passed, the hibernation
-  record satisfies this precondition. Record in the promotion artifact and the
-  ledger: that the Merge Gate was hibernated, the authorizer, and **the gate's
-  real readiness verdict at the time**.
+- **The Merge Gate has a recorded human approval.** Read the ledger's **Gate
+  approvals** table for a Merge Gate row naming a human, with a role and a
+  timestamp. That is the whole check. Authority:
+  `${CLAUDE_PLUGIN_ROOT}/references/governance/human-gates.md`.
 - The branch is merged to main through its normal repository authorization and
-  protection rules. **Hibernation never affects this** — it suspends a PROBE
-  gate, not the repository's own merge controls, which PROBE does not own.
+  protection rules. A PROBE approval never performs or substitutes for that
+  merge — those controls are not PROBE's to satisfy.
 
 ## Procedure
 
@@ -71,8 +66,14 @@ Make the merged scenarios part of the pipeline's steady state.
    only if it fits the smoke time budget; every automated scenario →
    `@regression` (nightly); visual checks run only in the profile's approved
    isolated environment. API, contract, integration, queue/batch, and reconciliation tests
-   use their own machine-readable slices. A P1 belongs in browser smoke only
-   when its surface and time budget fit. Adjust non-lifecycle slice tags if wrong.
+   use their own machine-readable slices. Desktop (`@desktop`) slices additionally require
+   an interactive-session runner (SessionCreator or an unlocked interactive
+   agent — headless agents cannot run TestComplete), are serialized per runner,
+   archive the exported log with the run evidence, and report through the
+   JUnit `/ExportSummary`; the exit-code contract in the
+   `testcomplete-winforms` profile's CI document is applied verbatim. A P1
+   belongs in browser smoke only when its surface and time budget fit. Adjust
+   non-lifecycle slice tags if wrong.
 3. Run each affected slice with the consumer's configured commands exactly as
    CI does; record durations, environment, and effective selection. If
    smoke grew past its budget, flag which scenarios to demote.
@@ -99,6 +100,6 @@ Make the merged scenarios part of the pipeline's steady state.
    slice ownership in a machine-readable configuration rather than prose alone.
 8. Ledger: TestOps Promotion `done` + artifact link only when the selected
    automated contract really ran. Record manual-only TC ids and their approved
-   terminal dispositions explicitly; unresolved dispositions block Ops Gate. Otherwise
-   mark `blocked` with the external prerequisite; local-as-CI diagnostics never
-   prove the Ops Gate.
+   terminal dispositions explicitly; the Ops Gate digest reports any that have
+   none. Otherwise mark `blocked` with the external prerequisite; local-as-CI
+   diagnostics are labelled diagnostic and never presented as pipeline evidence.

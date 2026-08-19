@@ -2,8 +2,19 @@
   "name": "yw",
   "displayName": "yieldWerx PROBE",
   "description": "YieldWerx QA workflows and product knowledge through one short yw namespace.",
-  "version": "2.13.2",
+  "version": "3.1.0",
   "author": {
     "name": "Tafseer Haider"
+  },
+  "mcpServers": {
+    "probe-tools": {
+      "command": "node",
+      "args": [
+        "${CLAUDE_PLUGIN_ROOT}/adapters/mcp/server.mjs"
+      ],
+      "env": {
+        "CLAUDE_PROJECT_DIR": "${CLAUDE_PROJECT_DIR}"
+      }
+    }
   }
 }

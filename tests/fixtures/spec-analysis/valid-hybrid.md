@@ -11,13 +11,23 @@ The provided requirement authority and reference context.
 - **Requirement source of truth:** Profile_Picture_Requirements.docx, revision 3
 - **Reference context consulted:** yieldwerx-knowledgebase 1.1.0 — Reference context only — not a requirement
 
+## Terms
+
+The product's own words for the things in this feature.
+
+| Term (exactly as the source writes it) | Plain meaning                                                     | Source |
+| -------------------------------------- | ----------------------------------------------------------------- | ------ |
+| Edit Profile                           | The screen where a user changes their own details.                | §3.1   |
+| Save Profile                           | The button that stores the changes made on that screen.           | §3.1   |
+| Profile picture                        | The small image shown next to a user's name across the product.   | §3.1   |
+
 ## Testable categories
 
 The groups of testing for this feature.
 
-| CAT    | Name             | ACs          | Where to check | Product terms   | Test data needed              | How to know the correct result  | Difficulty |
-| ------ | ---------------- | ------------ | -------------- | --------------- | ----------------------------- | ------------------------------- | ---------- |
-| CAT-01 | Profile pictures | AC-01, AC-02 | Profile screen | Profile picture | Valid and invalid image files | Compare with the approved rules | low        |
+| CAT    | Name             | ACs          | Where to check | Product terms   | Test data needed              | How to know the correct result  | Difficulty | Service surface                       |
+| ------ | ---------------- | ------------ | -------------- | --------------- | ----------------------------- | ------------------------------- | ---------- | ------------------------------------- |
+| CAT-01 | Profile pictures | AC-01, AC-02 | Profile screen | Profile picture | Valid and invalid image files | Compare with the approved rules | low        | Save profile picture, Read own profile |
 
 ## Acceptance criteria
 
@@ -31,10 +41,13 @@ What the product must do, per the spec.
 ### AC-01 — Save a valid picture
 
 **Summary:** Verify that a user can save a valid profile picture.
+**In plain words:** Every user has a small image shown next to their name. This
+lets them replace it with a picture from their own computer, as long as the file is
+a supported image type and is not too large.
 **Format:** Workflow
 
 ```gherkin
-Given The user is on the Edit Profile screen
+Given The user is on the "Edit Profile" screen
 And The user has selected a .png picture no larger than 5 MB
 When The user clicks the "Save Profile" button
 Then The selected picture is saved
@@ -44,10 +57,13 @@ And The picture is displayed on the user's profile
 ### AC-02 — Allow supported file types
 
 **Summary:** Verify that only .png and .jpeg profile pictures are accepted.
+**In plain words:** Image files come in many formats, and the product supports only
+two of them. Anything else is turned away rather than saved, so a user cannot end
+up with a broken image next to their name.
 **Format:** Simple Rule
 
 ```gherkin
-Given The user is on the Edit Profile screen
+Given The user is on the "Edit Profile" screen
 When The user selects a profile picture
 Then The picture must be in `.png` or `.jpeg` format
 And Every other file type must be rejected

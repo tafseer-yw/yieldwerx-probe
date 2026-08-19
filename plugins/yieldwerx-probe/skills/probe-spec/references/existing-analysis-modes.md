@@ -37,20 +37,37 @@ resolve old questions.
    use `--reconcile`; correcting requirement authority is not format-only.
 3. For every active AC:
    - add exactly one `**Summary:** Verify that ...` line;
+   - add exactly one `**In plain words:**` explanation, one to three sentences
+     for a reader with no domain knowledge;
    - keep `**Format:** Workflow` or `**Format:** Simple Rule`;
    - keep an existing Workflow's meaning while placing it in one fenced
      `gherkin` block;
    - convert a Simple Rule checklist to `Given`, `When`, and `Then`;
    - keep every Simple Rule result as `must` or `must not`.
-4. Use only nouns, context, actions, and results already present in the old
+4. Add the `## Terms` section from the terms the existing analysis already uses:
+   `Term (exactly as the source writes it) · Plain meaning · Source`. Take each
+   term's spelling and its cited section from the existing analysis — this mode
+   does not reread the requirement. If the analysis uses an acronym whose source
+   cannot be established from what is already recorded, that is a signal the
+   analysis coined it: write the words out and note the expansion you used. If
+   the expansion is not derivable either, stop and use `--reconcile`.
+5. Expand abbreviations and invented short forms into the words already present
+   elsewhere in the analysis. This is presentation, not meaning: `config` becomes
+   `configuration` and a coined `CDM` becomes `Cluster Detection Mode` only when
+   the long form already appears in the analysis. Never guess an expansion — an
+   unresolvable short form means the meaning was never recorded, which is a
+   `--reconcile` problem.
+6. Use only nouns, context, actions, and results already present in the old
    analysis. For a static rule with no stated product action, use a neutral
    check such as `When The rule is checked`; do not invent a click, screen,
    message, permission, or product event.
-5. Compare each AC before and after. Classify it as `format-only` or
-   `unchanged`. If any AC needs a new value, condition, result, interpretation,
-   or source, stop and tell the user to run `--reconcile`.
-6. Run the Spec Probe validator and the reconciliation validator.
-7. Set the report result to `format-only`, or `no-change` if nothing changed.
+7. Compare each AC before and after. Classify it as `format-only` or
+   `unchanged`. Adding a summary, a plain-words explanation, the Terms table, or
+   expanding an abbreviation is `format-only` — none of them changes what the
+   product must do. If any AC needs a new value, condition, result,
+   interpretation, or source, stop and tell the user to run `--reconcile`.
+8. Run the Spec Probe validator and the reconciliation validator.
+9. Set the report result to `format-only`, or `no-change` if nothing changed.
    Keep every downstream stage status and human signature unchanged. Add the
    report link to the ledger's Spec reconciliations table.
 
@@ -93,9 +110,9 @@ omitted requirement was removed.
    | Change                             | Required action                                                                      |
    | ---------------------------------- | ------------------------------------------------------------------------------------ |
    | `unchanged`, `format-only`         | No case, audit, gate, script, run, or sync invalidation                              |
-   | `added`                            | Route the new AC to Case Forge or the developer hand-off, then Case Audit            |
+   | `added`                            | Route the new AC to Case Forge or the developer hand-off                             |
    | `removed`                          | Route linked cases to Update Cases for retirement; review AIO sync and coverage      |
-   | `meaning-changed`, `superseded`    | Route linked cases to Update Cases; require Case Audit and Design Gate review        |
+   | `meaning-changed`, `superseded`    | Route linked cases to Update Cases; the Design Gate needs a fresh decision           |
    | changed expected value or boundary | Mark linked exploratory, automated, visual, and green-run evidence stale after cases |
 
 9. Do not erase a human signature. Add a dated ledger reconciliation row that
@@ -138,8 +155,7 @@ Allowed changes: `unchanged`, `format-only`, `added`, `removed`,
 ## Downstream impact
 
 - **Cases:** <None or affected AC/TC IDs and next action>
-- **Case Audit:** <None or required scope>
-- **Design Gate:** <Still current or review/re-sign requirement>
+- **Design Gate:** <Still current, or the exact scope needing a fresh decision>
 - **Scripts and run evidence:** <None or stale items>
 - **External case sync:** <None or keys/items to resync>
 

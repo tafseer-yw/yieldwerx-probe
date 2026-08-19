@@ -54,6 +54,17 @@ to stop.
    them, ordered by how much each one changes the design, and give each the
    cheapest way to answer it: a human decision, a line in the requirement
    source, or a code check you could not finish.
+
+   Every question also carries **your recommended answer and one line of
+   reasoning**. A question without a stance is a survey: it hands the weighing
+   back to someone with less context than you just gathered, and it is slower
+   for them to answer than to decide from scratch. With a stance they can reply
+   "go with your recommendations" and the design proceeds. Recommending is not
+   resolving — the label stays `OPEN QUESTION`, the recommendation is visibly
+   yours, and nothing downstream may treat it as answered. Where a question is
+   genuinely the human's alone (a product call, a spend, a risk they own), say
+   that instead of manufacturing a preference — knowing it is not a technical
+   question is itself the answer they need.
 4. **A requirement gap is not yours to fill.** When the request needs behaviour
    no requirement covers, say so and name the routing —
    `/probe-spec --reconcile` where a spec analysis owns that requirement, and a
@@ -71,7 +82,8 @@ to stop.
   does not complete;
 - `observability` — the test ids, OpenAPI operations, and readable result values
   this change owes the QA track;
-- `open-questions` — ordered, each with its cheapest resolution path;
+- `open-questions` — ordered, each with its cheapest resolution path, a
+  recommended answer, and one line of reasoning;
 - `assumption-risks` — anything the request implies that nothing confirms;
 - `sources` — requirement sections and files consulted.
 

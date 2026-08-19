@@ -35,19 +35,17 @@ This is the operator reference for all public `yw:*` skills. The corresponding
 | -------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------- |
 | `/yw:ask-yieldwerx`              | `<question>`                                                                                                                                    | Ask an exact product/domain question. Read-only; returns sourced context to the invoking stage.                                        |
 | `/yw:update-yieldwerx-knowledge` | `<approved-change-request>`                                                                                                                     | Forward an approved correction or addition to the knowledge-maintenance workflow; its own review rules control writes.                 |
+| `/yw:forge-prd`   | `<feature-slug> [<the idea or problem, or a path to notes>] [--review \| --sign-off "<name>"]` | Write or advance the plain-language PRD both tracks read; sign-off is a recorded human decision.                     |
 | `/yw:probe-spec`                 | `<feature-slug> [<spec-path-or-text>] [--migrate-format \| --reconcile] [--compare-implementation <env-or-url>] [--role <role>] [--build <id>]` | Create, migrate, or reconcile `10-spec`; optionally chain an implementation comparison.                                                |
 | `/yw:probe-implementation`       | `<feature-slug> <env-or-url> [--role <role>] [--build <id>]`                                                                                    | Compare approved ACs with a reachable build and write `15-implementation-probe`; current behavior never becomes requirement authority. |
 
-### Case design, review, and authorization
+### Case design and authorization
 
 | Skill              | Accepted arguments                                                                                                         | Typical use and handoff                                                                                                        |
 | ------------------ | -------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------ |
-| `/yw:forge-cases`  | `<feature-slug> [--scenario-type positive\|functional\|negative\|edge\|all] [--category CAT-NN] [--ac AC-NN]`              | Create new QA-owned cases. Use `/yw:update-cases` for an existing set.                                                         |
+| `/yw:forge-cases`  | `<feature-slug> [--scenario-type positive\|functional\|negative\|edge\|all] [--category CAT-NN] [--ac AC-NN]`              | Create new QA-owned cases at the UI and API layer; every category records a visual and an API disposition. Use `/yw:update-cases` for an existing set. |
 | `/yw:update-cases` | `<feature-slug> -- <what needs to change>`                                                                                 | Amend affected cases in place while preserving TC/AIO identity and invalidating stale downstream evidence.                     |
-| `/yw:audit-cases`  | `<feature-slug> [--scenario-type positive\|functional\|negative\|edge\|all] [--category CAT-NN] [--ac AC-NN] [--tc TC-id]` | Independently audit selected cases before Design Gate.                                                                         |
-| `/yw:gate-design`  | `<feature-slug> [--category CAT-NN] [approved] [bypass Case Audit] [bypass Design Gate] [--owner-receipt <path>]`          | Assemble readiness; record a human approval or explicit waiver only when directly authorized.                                  |
-| `/yw:bypass-gate`  | `<feature-slug> <case-audit\|script-audit\|audits\|design\|merge\|ops\|all> [--category CAT-NN] [--reason "<reason>"]`     | Record a named allrounder's exact audit or gate waiver without changing the real verdict.                                      |
-| `/yw:owner-bypass` | `<feature-slug> --item "<stage/gate/item>" --reason "<reason>" [--scope feature\|CAT-NN] [--receipt <path>]`               | Apply a verified, scope-specific PROBE Owner receipt; never put the PIN in chat.                                               |
+| `/yw:gate-design`  | `<feature-slug> [--category CAT-NN] [approved]`                                                                            | Assemble the evidence digest; record a human's stated approval with a timestamp and unlock the next stages.                     |
 | `/yw:sync-cases`   | `<feature-slug> [--live] [--category CAT-NN]`                                                                              | Dry-run AIO sync by default. `--live` requires explicit approval. API, contract, and performance cases remain repository-only. |
 
 ### Reconnaissance and assisted execution
@@ -55,6 +53,8 @@ This is the operator reference for all public `yw:*` skills. The corresponding
 | Skill                 | Accepted arguments                                                                                                                                  | Typical use and handoff                                                                                                                |
 | --------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------- |
 | `/yw:ui-recon`        | `<feature-slug> [env] [--with-api-recon] [--spec <path-or-url>] [--with-case-execution] [--tc <id,id,...>] [--role <role>] [--continue-on-failure]` | Harvest UI contracts. Optional flags coordinate API evidence and case execution in the same browser walk.                              |
+| `/yw:desktop-recon` | `<feature-slug> [--build <id>] [--category CAT-NN]` | Survey the WinForms app: Name Mapping inventory plus the unnamed-control gap list. |
+| `/yw:forge-desktop-scripts` | `<feature-slug> [--category CAT-NN] [--tc TC-id]` | Automate approved desktop cases in TestComplete BDD with Python steps; import, never transcribe. |
 | `/yw:api-recon`       | `<feature-slug> [env] [--spec <path-or-url>] [--capture-ui]`                                                                                        | Reconcile declared API contracts and sanitized observations. `--capture-ui` makes API Recon the coordinator of one supporting UI walk. |
 | `/yw:execute-cases`   | `<feature-slug> [env] [--tc <id,id,...>] [--role <role>] [--continue-on-failure]`                                                                   | Execute exact approved Gherkin through one MCP browser batch with isolated independent cases and step-level evidence.                  |
 | `/yw:log-exploratory` | `<feature-slug>`                                                                                                                                    | Consolidate human or assisted execution into `50-exploratory`; it does not re-drive the application.                                   |
@@ -65,18 +65,20 @@ This is the operator reference for all public `yw:*` skills. The corresponding
 | ----------------------------- | ----------------------------------------------------------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------- |
 | `/yw:forge-oracle`            | `<feature-slug>`                                                                                                                    | Build independent expected-result logic before assertions use derived business values.                    |
 | `/yw:forge-scripts`           | `<feature-slug> [--scenario-type positive\|functional\|negative\|edge\|all] [--category CAT-NN] [--ac AC-NN] [--tc TC-id]`          | Implement approved UI/general scenarios and add `@automated` when runnable.                               |
-| `/yw:forge-api-tests`         | `<feature-slug> [--tc TC-id] [--operation operation-id] [--layer contract\|integration\|ui-interception\|all]`                      | Implement API coverage from approved cases plus `40-api-recon`; never sync API cases to AIO.              |
-| `/yw:forge-performance-tests` | `<feature-slug> [--profile smoke\|load\|spike\|stress\|endurance] [--operation operation-id]`                                       | Implement guarded k6 workloads for an authorized target, profile, load, SLO, and cleanup plan.            |
-| `/yw:audit-scripts`           | `<feature-slug> [branch] [--scenario-type positive\|functional\|negative\|edge\|all] [--category CAT-NN] [--ac AC-NN] [--tc TC-id]` | Independently audit the selected implementation; an explicit allrounder waiver retains its real findings. |
-| `/yw:green-run`               | `<feature-slug> [branch] [--scenario-type positive\|functional\|negative\|edge\|all] [--category CAT-NN] [--ac AC-NN] [--tc TC-id]` | Prove green x3 after Script Audit PASS or an exact current manifest-bound waiver.                         |
+| `/yw:forge-api-tests`         | `<feature-slug> [--stack <profile-name>] [--tc TC-id] [--operation operation-id] [--layer contract\|integration\|ui-interception\|fuzz\|all]`                      | Implement API coverage from approved cases plus `40-api-recon`; never sync API cases to AIO.              |
+| `/yw:forge-performance-tests` | `<feature-slug> [--stack <profile-name>] [--profile smoke\|load\|spike\|stress\|endurance] [--operation operation-id]`                                       | Implement guarded k6 workloads for an authorized target, profile, load, SLO, and cleanup plan.            |
+| `/yw:audit-scripts`           | `<feature-slug> [branch] [--scenario-type positive\|functional\|negative\|edge\|all] [--category CAT-NN] [--ac AC-NN] [--tc TC-id]` | ADVISORY independent review of the selected implementation; never a gate, blocks nothing.                 |
+| `/yw:green-run`               | `<feature-slug> [branch] [--scenario-type positive\|functional\|negative\|edge\|all] [--category CAT-NN] [--ac AC-NN] [--tc TC-id]` | Prove green x3 on the selected scope; every run recorded and every failure classified.                     |
 
 ### Merge, operations, and cross-track diagnosis
 
 | Skill                 | Accepted arguments                                         | Typical use and handoff                                                                                                            |
 | --------------------- | ---------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------- |
-| `/yw:gate-merge`      | `<feature-slug> [bypass Script Audit] [bypass Merge Gate]` | Assemble readiness; Script Audit and Merge Gate waivers are separate explicit decisions, never PASS or a merge.                    |
-| `/yw:testops-promote` | `<feature-slug>`                                           | Wire signed/bypassed merged automation into CI, reporting, slicing, and quarantine observation.                                    |
-| `/yw:gate-ops`        | `<feature-slug> [N-runs] [bypass Ops Gate]`                | Evaluate operational evidence using the supplied run threshold or configured default.                                              |
+| `/yw:gate-merge`      | `<feature-slug>`                                           | Assemble the evidence digest; record a human's stated approval. The approval is never itself a merge.                              |
+| `/yw:testops-promote` | `<feature-slug>`                                           | Wire approved, merged automation into CI, reporting, slicing, and quarantine observation.                                          |
+| `/yw:gate-ops`        | `<feature-slug> [N-runs]`                                  | Assemble operational evidence using the supplied run threshold or configured default; record a human's stated approval.            |
+| `/yw:forge-security-tests` | `<feature-slug> [--owasp A01,A07,...] [--category CAT-NN]` | Author the OWASP 2025 categories a scanner cannot judge; tagged by category, repository-only. |
+| `/yw:scan-security` | `<scope> [--verbs deps-scan,sast,baseline-scan,api-scan,fuzz] [--target <url> --authorize] [--env <name>]` | Drive and triage the security toolchain; active scans require explicit target authorization. |
 | `/yw:bug-report`      | `<feature-slug> <one-line-symptom>`                        | Consume failure evidence, classify an application defect, create a local candidate, and require fresh approval before Jira writes. |
 | `/yw:flake-triage`    | `<feature-slug-or-scenario> [evidence-path]`               | Classify intermittent behavior and control quarantine/exit evidence.                                                               |
 | `/yw:change-impact`   | `[base-ref]`                                               | Compare frontend changes against the given Git base reference or configured default and propose affected tests.                    |
@@ -91,8 +93,14 @@ edits the other's artifacts. Authority: `references/process/DEV-TRACK.md`.
 
 | Skill                  | Accepted arguments                                                                                                                          | Typical use and handoff                                                                                                   |
 | ---------------------- | ------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------- |
+| `/yw:forge-tech-design` | `<feature-slug> [--stack <profile-name>] [--ac AC-NN]` | Design the declared stack solution from the spec analysis; refuses while blocking questions are open. |
+| `/yw:forge-unit-tests` | `<feature-slug> [--stack <profile-name>] [--ac AC-NN]` | Write the developer-owned tests the spec routed to unit/integration level. |
+| `/yw:forge-migration` | `<feature-slug or change description> [--stack <profile-name>] [--data-only]` | Author safe, registered database migrations with an honest rollback story. |
+| `/yw:sync-styleguide` | `<feature-slug or --all> [--stack <profile-name>] [--fix]` | Reconcile implemented UI against the repo styleguide/tokens and report or fix the drift. |
+| `/yw:review-pr` | `<pr-number-or-url> [--repo <path>] [--post]` | Review a pull request as its reviewer; GO / NO-GO evidence for the human approver, never a merge. |
+| `/yw:handoff` | `'[<slug>] \| close <slug> \| list'` | Write the session-to-session handoff; close it when the work lands. |
 | `/yw:scaffold-app`     | `<app-slug> [--stack <profile-name>] [--surfaces api,ui,db,auth,queue] [--dry-run]`                                                         | Stand up an application whose QA contracts exist from the first commit. Once per application; refuses over existing code. |
-| `/yw:build-feature`    | `<feature-slug> [--ac AC-NN] [--category CAT-NN] [--requirement <path>] [--no-requirement "<reason>"]`                                      | Approved requirement to verified capability on `feat/<slug>`. Clears its own observability obligations before it closes.  |
+| `/yw:build-feature`    | `<feature-slug> [--stack <profile-name>] [--layer backend\|frontend\|both] [--ac AC-NN] [--category CAT-NN] [--requirement <path>] [--no-requirement "<reason>"]`                                      | Approved requirement to verified capability on `feat/<slug>`. Clears its own observability obligations before it closes.  |
 | `/yw:revise-feature`   | `<feature-slug> -- <what must change> [--breaking-ok "<authorization>"] [--ac AC-NN]`                                                       | Change existing behavior compatibly; hands the QA track a downstream-invalidation list routed to `/yw:update-cases`.      |
 | `/yw:fix-defect`       | `<feature-slug> "<defect-slug-or-symptom>" [--candidate <path>] [--tc TC-id] [--no-test "<reason>"]`                                        | Close the loop from `/yw:bug-report`. Failing test first; never closes the candidate itself.                              |
 | `/yw:seed-testability` | `<feature-slug> [--from-recon <path>] [--surface ui\|api\|results\|all] [--rank high\|medium\|all]`                                         | Turn a recon gap list into shipped selector and API-document contracts. Changes observability, never behavior.            |
@@ -161,20 +169,16 @@ invocation unless the active profile explicitly documents another syntax.
 
 ### Gate and external-write arguments
 
-- Plain `approved` is accepted only as a direct human response to a ready Design
-  Gate. It never implies Case Audit or gate bypass.
-- `bypass ...` phrases are accepted only from an authorized named human and
-  preserve the real `NOT READY` evidence.
-- `/yw:bypass-gate <feature> case-audit` and `script-audit` waive only the named
-  audit; `audits` expands to one waiver for each. A Script Audit waiver is bound
-  to the exact TC inventory and commit/file-hash manifest and becomes stale
-  after any material script change.
-- `all` means Design, Merge, and Ops gates only. Audit and gate bypass groups do
-  not imply each other.
-- `--owner-receipt`/`--receipt` points to a short-lived signed receipt; it never
-  contains the owner's PIN.
-- `--live` is the only Case Sync write mode. It cannot override Design Gate,
-  category, API-exclusion, credential, or connectivity checks.
+- Plain `approved` is accepted only as a direct human statement about the gate
+  digest in front of them. `continue`, `go ahead`, and `looks fine` are not
+  approvals — ask which is meant.
+- A gate approval is scoped: a feature approval covers the feature, a
+  `--category CAT-NN` approval covers that category only.
+- There are no bypass, waiver, or override arguments. A gate that has not been
+  approved is simply not approved.
+- `--live` is the only Case Sync write mode. It cannot override the Design Gate
+  approval check, the category scope, the API exclusion, credentials, or
+  connectivity.
 - Bug Report previews candidates locally. External issue creation, comments,
   and attachments require a current evidence review and explicit live approval.
 
@@ -258,7 +262,7 @@ separate target and load authorization.
   UI-led `--with-api-recon` or API-led `--capture-ui`.
 - Do not treat shared authentication as permission to share tenant/role state.
 - Do not use `--continue-on-failure` after failed cleanup or session corruption.
-- Do not run Script Forge before Design Gate authorization.
+- Do not run Script Forge before a recorded human Design Gate approval.
 - Do not use Case Sync for API, contract, or performance cases.
 - Do not treat Bug Report generation as authorization to file Jira issues.
 - Do not run stress/endurance workloads against a target authorized only for a

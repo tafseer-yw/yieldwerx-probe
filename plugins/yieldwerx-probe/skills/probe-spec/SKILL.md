@@ -1,8 +1,8 @@
 ---
 name: probe-spec
 user-invocable: true
-description: Use when starting QA work on a new feature, analyzing a provided PRD/story/specification, migrating an older spec-analysis artifact to the current AC format, or reconciling an existing analysis with a revised approved requirement document — treats the provided requirement package as the sole requirement source of truth; uses the YieldWerx knowledgebase only for terminology and business context; writes every acceptance criterion with a "Verify that ..." summary and Given/When/Then steps; preserves stable IDs and reports downstream impact. PROBE Spec Probe stage.
-track: design
+description: Use when starting QA work on a new feature, analyzing a provided PRD/story/specification, migrating an older spec-analysis artifact to the current AC format, or reconciling an existing analysis with a revised approved requirement document — treats the provided requirement package as the sole requirement source of truth; uses the YieldWerx knowledgebase only for terminology and business context; writes every acceptance criterion with a "Verify that ..." summary, a plain-words explanation for a reader with no domain knowledge, and Given/When/Then steps; copies every control and product name verbatim from the source and never invents an acronym; preserves stable IDs and reports downstream impact. The shared entry point of BOTH tracks: dev and QA read the same analysis, and whoever runs it second reads the existing artifact rather than regenerating it. PROBE Spec Probe stage.
+track: shared
 safety: writes-local
 produces: .probe/artifacts/<feature>/10-spec/spec-analysis.md, optional .probe/artifacts/<feature>/10-spec/spec-reconciliation.md, docs/qa/<feature>/LEDGER.md
 consumes: PRD / user story / spec document (path or pasted text), optional existing spec-analysis.md
@@ -26,10 +26,11 @@ to resolve.
 ## What
 
 Distill the specification into stable Workflow and Simple Rule ACs. Give every
-AC a short `Verify that ...` summary and simple Given/When/Then steps. Also
-record categories, unclear wording, questions, product/test data needs, places
-to check, test levels, and a feature ledger. Use the knowledgebase only to
-understand YieldWerx words and business context.
+AC a short `Verify that ...` summary, a plain-words explanation a reader with no
+domain knowledge can follow, and simple Given/When/Then steps. Also record the
+source's terms verbatim, categories, unclear wording, questions, product/test data
+needs, places to check, test levels, and a feature ledger. Use the knowledgebase
+only to understand YieldWerx words and business context.
 
 ## When
 
@@ -47,13 +48,43 @@ knowledge only as reference context; write
 ## How
 
 Digest the source without inventing behavior, classify each AC as Workflow or
-Simple Rule, add its `Verify that ...` summary, write its Given/When/Then steps
-in short QA-friendly words, assign stable IDs, mark unknowns as TODOs/questions,
-keep every requirement traceable to the provided document, validate the
-artifact, and optionally chain Implementation Probe.
+Simple Rule, add its `Verify that ...` summary and `In plain words` explanation,
+write its Given/When/Then steps in short QA-friendly words using the source's own
+labels verbatim, assign stable IDs, mark unknowns as TODOs/questions, keep every
+requirement traceable to the provided document, validate the artifact, and
+optionally chain Implementation Probe.
+
+**Plain-language authority:**
+[references/plain-language.md](references/plain-language.md). Read it before
+writing any AC, category name, or question. It carries the verbatim-label rule,
+the acronym allowlist and its exemptions, the rejected abbreviations, and worked
+before/after examples. The validator enforces it.
 
 Ingest the specification and make it testable. This is the entry point of
 every PROBE cycle: it also creates the feature ledger.
+
+## One analysis, two tracks
+
+`spec-analysis.md` is **jointly owned by the dev and QA tracks** and there is
+exactly one of it per feature. The property that makes that work is already
+enforced below: an unqualified rerun on an existing analysis **fails closed**,
+so whoever runs Spec Probe second — dev or QA — gets the first run's analysis,
+not a second opinion. Three rules keep the joint ownership honest:
+
+- **Neither track regenerates it.** The QA track designs cases from it; the dev
+  track designs the technical solution from it (`/forge-tech-design`). A
+  requirement change goes through `--reconcile`, which preserves stable IDs and
+  reports downstream impact **to both tracks at once** — stale cases on one
+  side, a stale tech design and build on the other.
+- **The ledger records who ran it.** Step 1 below stamps the runner
+  (`Run by: <name> — dev track | QA track`) so the second reader knows the
+  analysis exists and whose questions are already in it.
+- **When a signed-off PRD exists in the knowledgebase, it is the canonical
+  source.** Cite it with its lifecycle state. A `draft` or `in-review` PRD may
+  be analyzed, but the analysis records
+  `Requirement source of truth: <PRD> — NOT signed off` and the Design Gate
+  digest carries that as a gap; never silently treat an unsigned PRD as
+  approved.
 
 ## Inputs
 
@@ -88,7 +119,10 @@ must not be combined with `--migrate-format`.
 1. If `docs/qa/<feature>/LEDGER.md` does not exist, create it from the
    [ledger template](references/ledger-template.md). Read that reference when
    creating the ledger or adding a reconciliation row. Whether new or existing,
-   mark Spec Probe `in-progress` before analysis. On an unrecoverable
+   mark Spec Probe `in-progress` before analysis, and record the runner and
+   track (`Run by: <name> — dev track` or `— QA track`) in the stage row's
+   Artifact/notes cell so the other track can see the analysis exists. On an
+   unrecoverable
    missing-source/research failure, mark it `blocked` with the reason; never
    leave stale `in-progress` state.
 2. **Fork the heavy read (PROBE policy P7 rule 3).** Do not load the raw
@@ -97,9 +131,13 @@ must not be combined with `--migrate-format`.
    exact section/page in the provided requirement. For a user or system flow,
    capture the starting situation, action, and expected result. For a simple
    limit, layout, data, or performance rule, capture the exact rule and value.
-   Quote verbatim any sentence with more than one reading; list the YieldWerx
-   domain words and modules named, without importing behavior from a handbook
-   or knowledgebase; quote verbatim anything the requirement explicitly
+   Quote verbatim any sentence with more than one reading; list every control,
+   screen, field, tab, button, status, message, and product term the requirement
+   names, **exactly as the requirement writes it** — same words, same
+   capitalisation, same spacing — with the section where each appears, and note
+   which of them the requirement itself abbreviates or gives an acronym for; list
+   the YieldWerx domain words and modules named, without importing behavior from a
+   handbook or knowledgebase; quote verbatim anything the requirement explicitly
    declares out of scope, deferred, a non-goal, 'will not do', 'future', or
    'phase 2'; note anything the requirement is silent on as `TODO(spec)`."
    Work from the returned digest. For a short pasted spec that already fits,
@@ -132,12 +170,21 @@ must not be combined with `--migrate-format`.
      them. A Workflow AC states the business flow; it is not the detailed test
      case that Case Forge writes later.
 
-     Before the Gherkin for **every** AC, add one summary line in this exact
+     Before the Gherkin for **every** AC, add two lines in this exact order and
      shape:
 
      `**Summary:** Verify that ...`
 
-     The summary states the result a QA will check. Both Workflow and Simple
+     `**In plain words:** <one to three sentences>`
+
+     The summary states the result a QA will check, in one sentence of twenty words
+     or fewer. The `In plain words` line explains the criterion to a competent
+     reader with **no domain knowledge** — what the thing is, why it matters, and
+     what a tester would see. Name the domain terms there and explain them in full
+     sentences; it is the one place a full explanation of `hard bin`, `inking`, or
+     `notch` belongs. It must add understanding, not restate the summary.
+
+     Both Workflow and Simple
      Rule ACs use a fenced `gherkin` block with `Given`, `When`, and `Then`.
      Do not invent a click, screen, or system event just to make a Simple Rule
      look like a workflow. Use the smallest context and action that the source
@@ -212,7 +259,24 @@ must not be combined with `--migrate-format`.
    for a test but is missing from the PRD, ask a question; do not fill it from
    the knowledgebase. Current implementation remains observation only.
 
-5. **For each AC, say where you can see it happen** — on screen, on a chart, in an
+5. **Record the source's terms verbatim** in a `## Terms` table:
+   `Term (exactly as the source writes it) · Plain meaning · Source`.
+
+   Include every control, screen, field, status, role, mode, report, and domain word
+   the analysis uses. `Plain meaning` is one short sentence for a reader with no
+   domain knowledge. `Source` is the section or page where the requirement uses it.
+
+   This table does double duty. It is the reader's glossary, and it is the
+   **allowlist for acronyms**: an acronym or initialism may appear anywhere in the
+   analysis only if the provided requirement itself uses it and a `## Terms` row
+   cites where. Everything else is written out in full, every time. The validator
+   enforces this, with a fixed exemption list for process ids, units, and file
+   formats — see [plain-language.md](references/plain-language.md).
+
+   If the source spells a label inconsistently, record both spellings as an
+   `AMB-NN` and ask. Do not pick one.
+
+6. **For each AC, say where you can see it happen** — on screen, on a chart, in an
    API response, in the database, in an imported file, in an exported report, in the
    job queue, in a rule's decision, in a saved setting, in who is allowed in, or in
    the audit log. Name another place if none of these fit.
@@ -230,7 +294,7 @@ must not be combined with `--migrate-format`.
    | Check the response against the agreed format                                     | API shapes, file formats         |
    | A separate database query that adds up                                           | totals, roll-ups, reports        |
    | A table of expected values a human signed off                                    | anything the above can't derive  |
-   | 5a. **Recommend a test level per AC, and mark who owns it.** Record the level(s) |
+   | 6a. **Recommend a test level per AC, and mark who owns it.** Record the level(s) |
    | in the **Best test level** column; an AC may warrant more than one (a formula is |
    | `unit` for the math _and_ `e2e` for the displayed tile).                         |
 
@@ -246,35 +310,56 @@ must not be combined with `--migrate-format`.
    | `performance` | throughput/latency/large-file timing            | dev    |
 
    This drives Case Forge's routing: **QA levels become scenarios; dev levels are
-   routed to `20-cases/dev-handoff.md`** so coverage stays complete. Recommend the
+   routed to `20-cases/dev-handoff.md`** so coverage stays complete.
+
+   **The level says how deep, not where.** A behavior reachable only through the
+   desktop application is still `e2e` or `component` — the surface is carried by
+   the orthogonal `@desktop` tag Case Forge adds, exactly as `@visual` and `@api`
+   are carried. Note the surface in **Where to check** ("Desktop application,
+   Bin Pareto report"); do not invent a level for it. Recommend the
    level where the behavior is most cheaply and reliably pinned — never inflate a
    calculation to `e2e` just because this repo runs Playwright. `@visual`/`@a11y`
    are quality dimensions, not levels; do not list them here.
 
-6. **Group the ACs into testable chunks** `CAT-NN`. Put ACs together when a tester
+7. **Group the ACs into testable chunks** `CAT-NN`. Put ACs together when a tester
    would naturally test them in one sitting, and **name the group the way a QA would
    say it out loud** — "Creating a policy", "Who is allowed to approve", "Reprocessing
    old wafers", "Report filters". Each group becomes one feature file in Case Forge.
    For each group record: name, its ACs, where you can see it happen, the domain
    ideas involved, what test data you need, how you'll know the right answer (or
-   `N/A` and why), and how hard it looks (`low` / `medium` / `high`).
+   `N/A` and why), how hard it looks (`low` / `medium` / `high`), and its
+   **Service surface**.
+
+   **Service surface** names the business operations behind the group that a test
+   could call directly — "Create policy, Approve policy version, List policies for
+   a wafer" — or `none` with the reason, such as "the character limit is enforced
+   in the browser and never reaches the server". Use the names the requirement
+   uses; do not guess an endpoint, a path, or an HTTP verb, and do not invent an
+   operation the requirement does not describe. If the requirement is silent on
+   whether a rule is enforced server-side, write `unknown — TODO(env): confirm with
+   /api-recon`.
+
+   Case Forge designs each category at both layers and needs this to know what the
+   API layer even is. Getting it wrong here is cheap; discovering it during case
+   design is not.
+
    Every AC belongs to **exactly one** group.
-7. Write `.probe/artifacts/<feature>/10-spec/spec-analysis.md` with sections:
-   Summary · Sources and revisions · Testable categories · Acceptance criteria · Other things to
+8. Write `.probe/artifacts/<feature>/10-spec/spec-analysis.md` with sections:
+   Summary · Sources and revisions · Terms · Testable categories · Acceptance criteria · Other things to
    consider · Where to check each requirement · Unclear wording · Open questions
    · Product and test data notes · Out of scope.
    From here on, this file is the **downstream requirement digest** — Case Forge
    and later stages read it instead of repeatedly loading the PRD. It is not a
    new authority: the provided PRD/package remains the source of truth. The
    digest must stand on its own, and any conflict requires reconciliation.
-8. Run `node ${CLAUDE_PLUGIN_ROOT}/skills/probe-spec/scripts/validate-spec-analysis.mjs
+9. Run `node ${CLAUDE_PLUGIN_ROOT}/skills/probe-spec/scripts/validate-spec-analysis.mjs
 .probe/artifacts/<feature>/10-spec/spec-analysis.md`. Fix every error before
    completion. Warnings require review but do not automatically block.
-9. Update the ledger: Spec Probe `done` + artifact link; record the requirement
+10. Update the ledger: Spec Probe `done` + artifact link; record the requirement
    document/revision and the knowledge reference revision separately; list category, AC,
    unclear-wording, open-question, `TODO(spec)`, `TODO(domain)`, and OOS counts. Do
    not mark the stage done when validation fails.
-10. If `--compare-implementation <env-or-url>` was supplied, invoke
+11. If `--compare-implementation <env-or-url>` was supplied, invoke
     `/probe-implementation <feature-slug> <env-or-url>` with the supplied role
     and build. Implementation Probe owns its own status: a blocked comparison
     does not roll Spec Probe back from `done`, and observed behavior never
@@ -336,46 +421,68 @@ quietly shifts.
 
 ## Write it in plain language
 
-**A QA and a product owner are the readers.** They must be able to read an AC, a
-category name, or an open question and know what it means without a glossary, a
-second document, or a developer sitting next to them. If a QA cannot tell what to
-test from your sentence, the sentence has failed — however precise it is.
+**A QA and a product owner are the readers, and increasingly someone new to
+semiconductor test.** They must be able to read an AC, a category name, or an open
+question and know what it means without a glossary, a second document, or a
+developer sitting next to them. If a QA cannot tell what to test from your
+sentence, the sentence has failed — however precise it is.
 
+Full authority, with the exemption lists and worked examples:
+[references/plain-language.md](references/plain-language.md). The validator enforces
+all of it. The five rules that matter most:
+
+- **Labels are verbatim.** Every control, screen, field, tab, button, status,
+  message, and product term is written **exactly as the source writes it** — same
+  words, same capitalisation, same spacing, same singular or plural. The source's
+  `Cluster Detection Mode` is never `cluster mode`, never `Cluster Det. Mode`, and
+  never `CDM`. Quote it in a Gherkin step:
+  `When The user clicks the "Save Profile" button`. A first use may add a short
+  gloss in parentheses — _inking (re-binning the good dies around a cluster to a
+  fail bin)_ — but the label itself is untouched. An inconsistent label in the
+  source is an `AMB-NN`, not a licence to choose.
+- **Never invent an acronym or initialism.** One may appear only if the provided
+  requirement itself uses it **and** a `## Terms` row cites where. Everything else
+  is written out in full, every time. Process ids, units, and file formats are
+  exempt; the authority lists them exactly.
+- **Never abbreviate.** Write `configuration`, not `config`; `message`, not `msg`;
+  `quantity`, not `qty`; `average`, not `avg`; `parameter`, not `param`. The
+  authority carries the full rejected list.
 - **Say it the way you would say it aloud.** "The policy name must be unique" beats
-  "policy identity uniqueness is enforced at persistence".
-- **Prefer the visible word over the internal one.** Write the label the user sees
-  ("Scope level", "Cluster detection mode"), not the field, table, enum, or DTO name.
-  Internal names belong in `case-details.md` later, not in the requirement.
-- **Use a domain term when it is the real word for the thing, then gloss it once.**
-  Hard bin, soft bin, wafer notch, cluster, inking, probing sequence, yield — a QA
-  testing YieldWerx must know these, so use them. On first use in the Summary, add a
-  short gloss: _inking (re-binning the good dies around a cluster to a fail bin)_.
+  "policy identity uniqueness is enforced at persistence". Prefer the visible word
+  over the internal one — write the label the user sees, not the field, table,
+  enum, or DTO name. Internal names belong in `case-details.md` later.
+- **Use a domain term when it is the real word for the thing, then explain it once
+  in `In plain words`.** Hard bin, soft bin, wafer notch, cluster, inking, probing
+  sequence, yield — a QA testing YieldWerx must know these, so use them, and let
+  the plain-words line carry the explanation for everyone else.
+
+Also:
+
 - **Drop jargon that adds nothing.** Say "where to check" not "verification
   surface"; "how to know the correct result" not "truth strategy"; "unclear
-  wording" not "semantic ambiguity"; "test data needed" not "evidence
-  strategy". Do not write `payload`, `persisted`, `DOM`, `locator`, `method`,
-  `class`, `schema`, `leverage`, or `operationalize` unless the approved
-  requirement itself is about that technical item.
-- **Use short sentences and visible product words.** Say `saved`, not
-  `persisted`; say `error message`, not `validation response`; say the button or
-  field label when the source provides it.
-- **One AC, one result that can pass or fail.** If two parts can fail
-  separately, give them separate AC IDs.
+  wording" not "semantic ambiguity"; "test data needed" not "evidence strategy".
+  Say `saved`, not `persisted`; `error message`, not `validation response`. Do not
+  write `payload`, `DOM`, `locator`, `method`, `class`, `schema`, `leverage`, or
+  `operationalize` unless the approved requirement itself is about that technical
+  item.
+- **One AC, one result that can pass or fail.** If two parts can fail separately,
+  give them separate AC IDs.
 - **Numbers stay exact.** Plain language applies to the prose, never to a value: a
   threshold, bin number, tolerance, or rounding rule is written precisely or not at
   all. Vagueness in an expected value is the one thing worse than jargon.
 - **Avoid vague words.** Do not use `fast`, `easy`, `properly`, `correctly`,
-  `seamless`, `intuitive`, or `user-friendly`. Replace them with something a QA
-  can check.
-- **Start every AC with a short result summary.** Use the exact label and
-  opening words `**Summary:** Verify that ...`.
-- **Write both AC formats in Gherkin.** Use one `Given`, one `When`, and one or
-  more `Then`/`And` results. Do not write the click-by-click test procedure
-  here.
+  `seamless`, `intuitive`, or `user-friendly`. Replace them with something a QA can
+  check. If the source uses one and never makes it measurable, that is an `AMB-NN`
+  or a `Q-NN`.
+- **Start every AC with a short result summary**, using the exact label and opening
+  words `**Summary:** Verify that ...` — one sentence, twenty words or fewer.
+- **Follow it with `**In plain words:**`** — one to three sentences for a reader
+  with no domain knowledge. Required on every active AC.
+- **Write both AC formats in Gherkin.** One `Given`, one `When`, and one or more
+  `Then`/`And` results. Do not write the click-by-click test procedure here.
 - **Keep Simple Rules direct.** Every `Then`/`And` result uses `must` or
   `must not`. A performance rule states the workload, test environment, exact
-  limit, and how many measured runs must meet it. Do not use checklist bullets
-  for an active AC.
+  limit, and how many measured runs must meet it.
 - Keep the short ids (`AC-01`, `CAT-03`, `Q-07`) — they are how stages refer to each
   other, and QAs get used to them in a day.
 
@@ -386,6 +493,7 @@ heading so a first-time reader knows what they are looking at:
 | Heading (keep as-is)            | Subtitle to add                                                 |
 | ------------------------------- | --------------------------------------------------------------- |
 | Sources and revisions           | "The provided requirement authority and reference context."     |
+| Terms                           | "The product's own words for the things in this feature."       |
 | Testable categories             | "The groups of testing for this feature."                       |
 | Acceptance criteria             | "What the product must do, per the spec."                       |
 | Other things to consider        | "Useful ideas that the spec does not yet require."              |
@@ -393,10 +501,13 @@ heading so a first-time reader knows what they are looking at:
 | Unclear wording                 | "Words in the spec that could mean more than one thing."        |
 | Open questions                  | "What the team must answer before these cases can be trusted."  |
 | Product and test data notes     | "The product facts and test data these tests need."             |
-| Out of scope                    | "What the spec says is deliberately not included."              |
+| Out of scope                    | "What the spec says is deliberately not included."             |
 
-Quick check before you finish: read three ACs and one open question aloud. If any of
-them needs a second sentence to explain the first, rewrite it.
+Quick check before you finish: read three summaries aloud — if any needs a second
+sentence to explain the first, rewrite it. Read one `In plain words` line as if you
+joined yesterday — if it only restates the summary, rewrite it. Then search your
+draft for any run of two or more capital letters: every hit is either exempt, or in
+`## Terms` citing the source, or a bug.
 
 ## Formats in `spec-analysis.md`
 
@@ -404,7 +515,8 @@ Use these fixed columns:
 
 | Section                  | Columns                                                                                                              |
 | ------------------------ | -------------------------------------------------------------------------------------------------------------------- |
-| Testable categories      | `CAT · Name · ACs · Where to check · Product terms · Test data needed · How to know the correct result · Difficulty` |
+| Terms                    | `Term (exactly as the source writes it) · Plain meaning · Source`                                                    |
+| Testable categories      | `CAT · Name · ACs · Where to check · Product terms · Test data needed · How to know the correct result · Difficulty · Service surface` |
 | Acceptance criteria      | `AC · Format · Requirement · Source · Where to check · Best test level · Status(active/superseded/removed)`          |
 | Other things to consider | `DER · Suggestion · Why · Needs answer(Q-NN / TODO)`                                                                 |
 | Unclear wording          | `AMB · Exact words · Source · Possible meanings`                                                                     |
@@ -420,10 +532,13 @@ AC.
 ### AC-01 — Save a valid profile picture
 
 **Summary:** Verify that a user can save a valid profile picture.
+**In plain words:** Every user has a picture shown next to their name. This lets
+them replace it with a photo from their own computer, as long as the file is one of
+the two allowed image types and is not too large.
 **Format:** Workflow
 
 ```gherkin
-Given The user is on the Edit Profile screen
+Given The user is on the "Edit Profile" screen
 And The user has selected a .png or .jpeg picture no larger than 5 MB
 When The user clicks the "Save Profile" button
 Then The selected picture is saved
@@ -437,21 +552,39 @@ And The picture is displayed on the user's profile
 ### AC-02 — Profile picture file types
 
 **Summary:** Verify that only .png and .jpeg profile pictures are accepted.
+**In plain words:** Image files come in many formats, and the product supports only
+two of them. Anything else — a document, a video, or an image in another format —
+is turned away rather than saved.
 **Format:** Simple Rule
 
 ```gherkin
-Given The user is on the Edit Profile screen
+Given The user is on the "Edit Profile" screen
 When The user selects a profile picture
 Then The picture must be in `.png` or `.jpeg` format
 And Every other file type must be rejected
 ```
 ````
 
+### Terms example
+
+```markdown
+| Term (exactly as the source writes it) | Plain meaning                                             | Source  |
+| -------------------------------------- | --------------------------------------------------------- | ------- |
+| Edit Profile                           | The screen where a user changes their own details.        | §3.1    |
+| Save Profile                           | The button that stores the changes made on that screen.   | §3.1    |
+| hard bin                               | The pass/fail category a chip is put in by the tester.    | §2, p.4 |
+```
+
+Write the term exactly as the source writes it. A row is what makes an acronym the
+source uses legal elsewhere in the analysis; without a row, write the words out.
+
 Do not write "changes are saved automatically when the user clicks Save."
 `Automatically` and `clicks Save` describe different behavior. Record unclear
 wording as `AMB-NN` and ask which behavior is required.
 
-- **Best test level** carries Task 5a's suggested level(s), comma-separated. It guides —
+- Every active AC carries exactly one `**Summary:**` line and exactly one
+  `**In plain words:**` line, in that order, before `**Format:**`.
+- **Best test level** carries Task 6a's suggested level(s), comma-separated. It guides —
   it does not bind — Case Forge's per-scenario `@testtype:` tag.
 - **Why** for an open question uses `industry-standard`, `statistical`,
   `technical`, or `domain`. A domain reference explains the suggestion but

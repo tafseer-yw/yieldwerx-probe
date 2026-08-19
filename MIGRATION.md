@@ -28,6 +28,123 @@ PROBE v1.4 was extracted on 2026-07-29 from the
 
 The source framework copy remains in place for a dual-run compatibility period.
 
+## Upgrade from 3.0.x to 3.1.0
+
+**Additive — no 3.0 behavior changed.** The new skills appear on install; the
+one thing to decide is whether to route dev work by stack.
+
+1. **Declare your stacks (optional but recommended for the Dev track).** Add a
+   `stacks:` list to `probe.config.yaml` naming the profiles present in this
+   consumer, first entry the default:
+
+   ```yaml
+   stacks: [node-ts-spa]        # or [dotnet-legacy], or several
+   ```
+
+   Dev-track skills accept `--stack <name>`; without the list they fall back to
+   your existing `profile:` key. An unknown `--stack` fails closed.
+
+2. **PRDs get a home and a lifecycle.** `/forge-prd` writes to `paths.prds`
+   (falling back to `paths.requirements`) with `prd-draft.md` →
+   `prd-in-review.md` → `prd-signed-off.md` — renamed, never copied. If you keep
+   requirements in the knowledgebase, point `paths.prds` there; `/probe-spec`
+   treats a signed-off PRD as its canonical source and records an unsigned one
+   as a gap rather than refusing.
+
+3. **Spec Probe is shared now.** Nothing to change: one `spec-analysis.md` per
+   feature, dev and QA both read it, and a requirement change still goes through
+   `/probe-spec --reconcile`. The ledger now records which track ran it.
+
+4. **Desktop testing (if you use TestComplete).** Select the
+   `testcomplete-winforms` profile and configure `commands.desktopTests` /
+   `desktopTestsTagged`. Read the profile's CI document before wiring a runner —
+   TestComplete needs an **interactive user session**, which a normal CI agent
+   does not provide, and the exit-code contract is non-obvious (only exit 2 is a
+   test failure).
+
+5. **Security testing.** Configure the `commands.security*` keys for the tools
+   you adopt (the adapter contract lists the verbs; the example playwright-bdd
+   config shows illustrative wiring). Run `deps-scan`/`sast` freely; the active
+   verbs (`api-scan`, `fuzz`, live `baseline-scan`) require explicit target
+   authorization and refuse without it.
+
+6. **Nothing is removed.** Every 3.0 skill, gate, and artifact behaves exactly
+   as before.
+
+## Upgrade from 2.13.x to 3.0.0
+
+**Breaking.** Every gate becomes a record of a human decision, and the machinery
+that existed to argue with computed verdicts is removed.
+
+Removed entirely — three skills, one agent, one reference, two scripts:
+
+| Removed                                | Replacement                                                             |
+| -------------------------------------- | ----------------------------------------------------------------------- |
+| `/yw:audit-cases`                      | the Design Gate digest, the coverage report, and Case Forge's self-check |
+| `/yw:bypass-gate`                      | nothing — there is no waiver to record                                  |
+| `/yw:owner-bypass`                     | nothing — there is no override to authorize                             |
+| `agents/test-case-auditor.md`          | —                                                                       |
+| `references/governance/gate-hibernation.md` | `references/governance/human-gates.md`                             |
+| `probe owner-bypass` CLI command       | —                                                                       |
+| `governance.gates` in `probe.config.yaml` | —                                                                    |
+
+Steps:
+
+1. **Remove `governance.gates` from `probe.config.yaml`.** The key is no longer in
+   the schema, and `probe validate-config` rejects it as unknown. Nothing replaces
+   it: gates no longer block, so there is nothing to suspend.
+2. **Drop `probe owner-bypass` from any consumer script or runbook.** Delete the
+   `PROBE_OWNER_BYPASS_PIN` and signing-key entries from your `.env` — they
+   authorize nothing now.
+3. **Leave existing ledgers alone.** Do not rewrite history: old waiver,
+   hibernation, and bypass rows stay exactly where they are, as the record of what
+   was decided under the process in force at the time. Features started after
+   3.0.0 use the new template.
+4. **Add a Gate approvals table to any in-flight ledger** you want to keep moving:
+
+   ```markdown
+   ## Gate approvals (human decisions)
+
+   | Gate | Scope | Approved by | Role | Timestamp | Confirmed | Evidence |
+   | ---- | ----- | ----------- | ---- | --------- | --------- | -------- |
+   ```
+
+   `/sync-cases` and `/forge-scripts` read this table. For backwards
+   compatibility they also accept a pre-3.0 stage-row Design Gate status of
+   `approved`, `signed`, or `done` — a genuine human approval under the old model.
+   They deliberately do **not** accept `bypassed`, `waived`, or `hibernated`: those
+   mechanisms no longer exist, and honouring one would let a retired override
+   authorize a live external write.
+5. **Rename the per-category Design Gate table columns.** `Signed by` → `Approved
+   by`, `Decision` + `Recorded by` → `Timestamp` + `Confirmed`. Drop the
+   `Case Audit` column.
+6. **Replace `/yw:audit-cases` in any runbook** with `/yw:gate-design`. The
+   coverage arithmetic it used to check is in the `requirementsCoverage` report,
+   which the Design Gate digest attaches; the adversarial reading is now the
+   human's, and the digest is built for it.
+7. **`/yw:audit-scripts` still exists but is advisory.** It holds no ledger row,
+   gates nothing, and needs no waiver. `/yw:green-run` and `/yw:gate-merge` no
+   longer require it. Keep running it — it catches self-passing tests — but run it
+   because it is useful, not because something is blocked without it.
+8. **Expect the `waived` ledger status to disappear.** The vocabulary is
+   `pending · in-progress · done · blocked · n/a`.
+9. **Case dispositions lose `waived`.** Use `manual-permanent`,
+   `deferred-until:<condition/date>`, or `retired`.
+
+Two other changes land in the same release:
+
+- **Spec Probe enforces plain language.** `spec-analysis.md` gains a required
+  `## Terms` section and a required `**In plain words:**` line per acceptance
+  criterion, and the validator now rejects invented acronyms and shortened control
+  labels. Bring an existing analysis forward with
+  `/yw:probe-spec <feature> --migrate-format`, which adds both without changing
+  any meaning or invalidating downstream evidence.
+- **Case Forge designs API cases in every category.** Each category now records an
+  explicit API disposition alongside its visual disposition, and API scenarios go
+  to `features/<slug>/<category>-api.feature`. They remain repository-only — the
+  AIO exclusion for `@api`, `@testtype:api`, `@testtype:contract`, and
+  `@testtype:performance` is unchanged.
+
 ## Upgrade from 2.9.0 to 2.9.1
 
 Version 2.9.1 repairs AIO live-sync integrity. Existing cases and artifacts do

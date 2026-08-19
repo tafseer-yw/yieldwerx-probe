@@ -24,10 +24,11 @@ Usage:
   probe doctor [--root <path>] [--config <path>] [--json] [--skip-plugin-check]
   probe validate-config [--root <path>] [--config <path>] [--json]
   probe validate-spec <spec-analysis.md>
+  probe validate-prd <prd-file.md>
   probe lint-gherkin <feature-slug> [selectors]
   probe coverage <feature-slug>
-  probe owner-bypass authorize|verify|consume [arguments]
   probe aio check|whoami|folders|cases|sync [arguments]
+  probe mcp-server
   probe --version
 `);
   process.exit(exitCode);
@@ -271,12 +272,17 @@ if (command === '--version' || command === '-v') {
   }
 } else if (command === 'validate-spec') {
   runBundled('skills/probe-spec/scripts/validate-spec-analysis.mjs', args);
+} else if (command === 'validate-prd') {
+  runBundled('skills/forge-prd/scripts/validate-prd.mjs', args);
 } else if (command === 'lint-gherkin') {
   runBundled('scripts/probe-lint-gherkin.ts', args);
 } else if (command === 'coverage') {
   runBundled('scripts/gen-coverage-report.ts', args);
-} else if (command === 'owner-bypass') {
-  runBundled('scripts/owner-bypass.mjs', args, environmentWithLocalFile());
+} else if (command === 'mcp-server') {
+  // The stdio MCP adapter, for hosts that run processes but give the assistant
+  // no shell (Claude Desktop). Hosts normally launch it from the plugin manifest;
+  // this entry point exists for a manual MCP configuration and for debugging.
+  runBundled('adapters/mcp/server.mjs', args, environmentWithLocalFile());
 } else if (command === 'aio') {
   const [action, ...actionArgs] = args;
   const scripts = {

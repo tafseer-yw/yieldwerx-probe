@@ -64,14 +64,15 @@ Every independent case still starts from a verified known state and executes
 all of its own Gherkin steps. The executor creates assisted/manual evidence;
 Playwright Test remains the automation and CI runner.
 
-## All 34 public skills: arguments and composition
+## All 42 public skills: arguments and composition
 
 The complete argument semantics, selector behavior, shared-session ownership,
 tandem recipes, artifact chains, and unsafe combinations are in the
 [skill usage and tandem guide](docs/SKILL-USAGE.md).
 
-The table below lists every public `yw:*` skill this repository ships — 27 on
-the QA track and 7 on the development track. The repository validator compares
+The table below lists every public `yw:*` skill this repository ships — 26 on
+the QA track, 13 on the development track, and 3 shared by both (`probe-spec`,
+`forge-prd`, `handoff`). The repository validator compares
 this README with the actual skill directories and fails when a skill, accepted
 argument contract, or full 5W1H catalog entry is missing.
 
@@ -79,28 +80,36 @@ argument contract, or full 5W1H catalog entry is missing.
 | -------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------- |
 | `/yw:ask-yieldwerx`              | `<question>`                                                                                                                                        |
 | `/yw:update-yieldwerx-knowledge` | `<approved-change-request>`                                                                                                                         |
+| `/yw:forge-prd`                  | `<feature-slug> [<the idea or problem, or a path to notes>] [--review \| --sign-off "<name>"]`   |
 | `/yw:probe-spec`                 | `<feature-slug> [<spec-path-or-text>] [--migrate-format \| --reconcile] [--compare-implementation <env-or-url>] [--role <role>] [--build <id>]`     |
 | `/yw:probe-implementation`       | `<feature-slug> <env-or-url> [--role <role>] [--build <id>]`                                                                                        |
 | `/yw:forge-cases`                | `<feature-slug> [--scenario-type positive\|functional\|negative\|edge\|all] [--category CAT-NN] [--ac AC-NN]`                                       |
+| `/yw:forge-tech-design` | `<feature-slug> [--stack <profile-name>] [--ac AC-NN]` |
+| `/yw:forge-unit-tests`  | `<feature-slug> [--stack <profile-name>] [--ac AC-NN]` |
+| `/yw:forge-migration`   | `<feature-slug or change description> [--stack <profile-name>] [--data-only]` |
+| `/yw:sync-styleguide`   | `<feature-slug or --all> [--stack <profile-name>] [--fix]` |
 | `/yw:update-cases`               | `<feature-slug> -- <what needs to change>`                                                                                                          |
-| `/yw:audit-cases`                | `<feature-slug> [--scenario-type positive\|functional\|negative\|edge\|all] [--category CAT-NN] [--ac AC-NN] [--tc TC-id]`                          |
-| `/yw:gate-design`                | `<feature-slug> [--category CAT-NN] [approved] [bypass Case Audit] [bypass Design Gate] [--owner-receipt <path>]`                                   |
-| `/yw:bypass-gate`                | `<feature-slug> <case-audit\|script-audit\|audits\|design\|merge\|ops\|all> [--category CAT-NN] [--reason "<reason>"]`                              |
-| `/yw:owner-bypass`               | `<feature-slug> --item "<stage/gate/item>" --reason "<reason>" [--scope feature\|CAT-NN] [--receipt <path>]`                                        |
+| `/yw:gate-design`                | `<feature-slug> [--category CAT-NN] [approved]`                                                                                                     |
 | `/yw:sync-cases`                 | `<feature-slug> [--live] [--category CAT-NN]`                                                                                                       |
 | `/yw:ui-recon`                   | `<feature-slug> [env] [--with-api-recon] [--spec <path-or-url>] [--with-case-execution] [--tc <id,id,...>] [--role <role>] [--continue-on-failure]` |
+| `/yw:desktop-recon`              | `<feature-slug> [--build <id>] [--category CAT-NN]`                                                                                                 |
+| `/yw:forge-desktop-scripts`      | `<feature-slug> [--category CAT-NN] [--tc TC-id]`                                                                                                   |
 | `/yw:api-recon`                  | `<feature-slug> [env] [--spec <path-or-url>] [--capture-ui]`                                                                                        |
 | `/yw:execute-cases`              | `<feature-slug> [env] [--tc <id,id,...>] [--role <role>] [--continue-on-failure]`                                                                   |
 | `/yw:log-exploratory`            | `<feature-slug>`                                                                                                                                    |
 | `/yw:forge-oracle`               | `<feature-slug>`                                                                                                                                    |
 | `/yw:forge-scripts`              | `<feature-slug> [--scenario-type positive\|functional\|negative\|edge\|all] [--category CAT-NN] [--ac AC-NN] [--tc TC-id]`                          |
-| `/yw:forge-api-tests`            | `<feature-slug> [--tc TC-id] [--operation operation-id] [--layer contract\|integration\|ui-interception\|all]`                                      |
-| `/yw:forge-performance-tests`    | `<feature-slug> [--profile smoke\|load\|spike\|stress\|endurance] [--operation operation-id]`                                                       |
+| `/yw:forge-api-tests`            | `<feature-slug> [--stack <profile-name>] [--tc TC-id] [--operation operation-id] [--layer contract\|integration\|ui-interception\|fuzz\|all]`                                      |
+| `/yw:forge-performance-tests`    | `<feature-slug> [--stack <profile-name>] [--profile smoke\|load\|spike\|stress\|endurance] [--operation operation-id]`                                                       |
 | `/yw:audit-scripts`              | `<feature-slug> [branch] [--scenario-type positive\|functional\|negative\|edge\|all] [--category CAT-NN] [--ac AC-NN] [--tc TC-id]`                 |
 | `/yw:green-run`                  | `<feature-slug> [branch] [--scenario-type positive\|functional\|negative\|edge\|all] [--category CAT-NN] [--ac AC-NN] [--tc TC-id]`                 |
-| `/yw:gate-merge`                 | `<feature-slug> [bypass Script Audit] [bypass Merge Gate]`                                                                                          |
+| `/yw:gate-merge`                 | `<feature-slug>`                                                                                                                                    |
 | `/yw:testops-promote`            | `<feature-slug>`                                                                                                                                    |
-| `/yw:gate-ops`                   | `<feature-slug> [N-runs] [bypass Ops Gate]`                                                                                                         |
+| `/yw:gate-ops`                   | `<feature-slug> [N-runs]`                                                                                                                           |
+| `/yw:review-pr`                  | `<pr-number-or-url> [--repo <path>] [--post]`                                                                                                       |
+| `/yw:handoff`                    | `'[<slug>] \| close <slug> \| list'`                                                                                                                 |
+| `/yw:forge-security-tests`       | `<feature-slug> [--owasp A01,A07,...] [--category CAT-NN]`                                                                                          |
+| `/yw:scan-security`              | `<scope> [--verbs deps-scan,sast,baseline-scan,api-scan,fuzz] [--target <url> --authorize] [--env <name>]`                                          |
 | `/yw:bug-report`                 | `<feature-slug> <one-line-symptom>`                                                                                                                 |
 | `/yw:flake-triage`               | `<feature-slug-or-scenario> [evidence-path]`                                                                                                        |
 | `/yw:change-impact`              | `[base-ref]`                                                                                                                                        |
@@ -116,7 +125,7 @@ Neither track edits the other's artifacts. Authority:
 | Skill                  | Accepted arguments                                                                                                                          |
 | ---------------------- | ------------------------------------------------------------------------------------------------------------------------------------------- |
 | `/yw:scaffold-app`     | `<app-slug> [--stack <profile-name>] [--surfaces api,ui,db,auth,queue] [--dry-run]`                                                         |
-| `/yw:build-feature`    | `<feature-slug> [--ac AC-NN] [--category CAT-NN] [--requirement <path>] [--no-requirement "<reason>"]`                                      |
+| `/yw:build-feature`    | `<feature-slug> [--stack <profile-name>] [--layer backend\|frontend\|both] [--ac AC-NN] [--category CAT-NN] [--requirement <path>] [--no-requirement "<reason>"]`                                      |
 | `/yw:revise-feature`   | `<feature-slug> -- <what must change> [--breaking-ok "<authorization>"] [--ac AC-NN]`                                                       |
 | `/yw:fix-defect`       | `<feature-slug> "<defect-slug-or-symptom>" [--candidate <path>] [--tc TC-id] [--no-test "<reason>"]`                                        |
 | `/yw:seed-testability` | `<feature-slug> [--from-recon <path>] [--surface ui\|api\|results\|all] [--rank high\|medium\|all]`                                         |
@@ -136,31 +145,42 @@ UI Recon is the only browser driver in that composition. API Recon observes
 network behavior, while Execute Cases records exact step verdicts and failure
 evidence from the same actions. Each skill writes and owns its own artifacts.
 
-## Gate hibernation (evaluation mode)
+## Gates are human decisions
 
-A consumer repository may suspend the Design, Merge and Ops Gates by declaring
-`governance.gates` in `probe.config.yaml`. This exists so a team can run PROBE
-end to end before agreeing to be bound by it.
+PROBE has exactly three gates — Design, Merge, Ops — and each one is **a record of
+a human decision**. Nothing else is a gate.
 
-**Hibernation suspends blocking and nothing else.** The gate still runs, still
-assembles evidence, and still reports `READY` or `NOT READY` with every failing
-item intact; its decision line reads
-`HIBERNATED — evidence assembled, not signed`. It is never `approved`,
-`passed`, or `signed` — rendering it as one is falsified evidence and is
-`blocker` under the severity ladder.
+Each gate does the same four things: assemble an evidence digest of facts, present
+it, record the human's decision, unlock the next stage. The digest carries counts,
+coverage numbers, lint and run results, and a **Gaps and open items** section
+listing everything missing or failing. It carries no verdict — no
+`READY`/`NOT READY`, no ✅/❌ checklist, no recommendation.
 
-Not suspended: the severity ladder (a `blocker` still halts, and wrong business
-data is still `blocker`), Case Audit and Script Audit verdicts, the traceability
-chain, external-write authorization, and the repository's own branch protection.
+```text
+assemble facts  →  present  →  human states a decision  →  record + unlock
+```
 
-`mode: hibernated` requires a named `authorizedBy`, a `reason`, a `scope`, and a
-`since` date. Every stage that proceeds writes a ledger row carrying the
-authorizer and the gate's real readiness verdict; when gates resume, those rows
-are the gate-debt list. Resume with `mode: active`, or delete the block.
+The approval row names the human, their role, a `YYYY-MM-DD HH:MM` timestamp, what
+they said they reviewed, and the evidence link. Any role may approve any gate.
+There is no waiver, bypass, hibernation, or override mechanism, because there is
+nothing to argue with: a gate that has not been approved is simply not approved,
+and the downstream stage stays locked.
+
+**Approving with the listed gaps visible is a legitimate decision** and is recorded
+as exactly that. Removing a gap from a digest to make the decision look cleaner is
+falsified evidence and is `blocker` under the severity ladder.
+
+**Claude never writes an approval a human did not state.** It may transcribe one
+they did, recording `Recorded by: Claude — transcribed from the human's direct
+approval`.
+
+One gate genuinely blocks: `/forge-scripts` refuses until the ledger's Gate
+approvals table has a Design Gate row naming a human with a timestamp for the scope
+being scripted (policy P4). That is the only automatic block in the process, and it
+blocks on exactly one thing — whether a human has looked at the design.
 
 Full contract:
-[gate-hibernation.md](plugins/yieldwerx-probe/references/governance/gate-hibernation.md)
-· policy P17.
+[human-gates.md](plugins/yieldwerx-probe/references/governance/human-gates.md).
 
 ## Skill catalog: Why, What, When, Where, and How
 
@@ -177,6 +197,25 @@ authoritative procedure remains inside the corresponding `SKILL.md`.
   `yieldwerx-knowledgebase@yieldwerx-company` dependency.
 - **How:** Pass the exact question to the authoritative knowledge skill and
   return its simple, source-based answer.
+
+### `forge-prd`
+
+- **Why:** Requirements written in engineering language exclude the people
+  funding the work; slideware excludes the people building it. One enforced
+  plain-language document lets executives, developers, and QA agree on what was
+  promised.
+- **What:** A PRD in the fixed template — problem and cost, what will be built
+  in product words, stable `US-NN` stories each with a plain-words explanation,
+  scope, success measures, open questions with recommended answers, and a Terms
+  table — validated by `validate-prd.mjs`.
+- **When:** At the very start of a feature, before `/yw:probe-spec` and any
+  design; again to amend, move to review, or record a human sign-off.
+- **Where:** The configured PRDs home (`paths.prds`, falling back to
+  `paths.requirements`), with the draft → in-review → signed-off lifecycle in
+  the filename — renamed, never copied.
+- **How:** Clarify without assuming, draft in the template with the shared
+  plain-language rules enforced, validate, and record lifecycle moves; sign-off
+  is a human decision Claude records with a name and timestamp, never makes.
 
 ### `probe-spec`
 
@@ -240,20 +279,88 @@ Substantive case changes are routed to `/yw:update-cases`.
 ### `forge-cases`
 
 - **Why:** Give manual QA and reviewers understandable, executable cases.
-- **What:** Create procedural Gherkin plus case details, pacing, scope,
-  per-category visual dispositions, and developer handoff.
+- **What:** Create procedural Gherkin at the UI **and API** layer, plus case
+  details, pacing, scope, per-category visual and API dispositions, and developer
+  handoff.
 - **When:** After valid spec analysis; parameters can restrict work to
   functional, positive, negative, edge, category, AC, or TC scope.
-- **Where:** Write configured consumer feature files and `20-cases` artifacts.
-- **How:** Map ACs to categories, record visual candidates or a specific visual
-  `N/A`, use visible sequential actions, preserve IDs, lint, and fail closed on
-  an empty selector.
+- **Where:** Write configured consumer feature files — `<category>.feature` and
+  `<category>-api.feature` — and `20-cases` artifacts.
+- **How:** Map ACs to categories; record visual candidates or a specific visual
+  `N/A` **and** API candidates or a specific API `N/A` for every category; design
+  the API dimensions that apply (functional, negative, boundary, authorization,
+  contract, workload) rather than one shallow case per endpoint; use visible
+  sequential actions, preserve IDs, lint, and fail closed on an empty selector.
+  API cases stay repository-only.
+
+### `forge-tech-design`
+
+- **Why:** A build that starts without a design resolves every architectural
+  question at the moment it is cheapest to get wrong; insecure design cannot be
+  scanned for later.
+- **What:** The layer-by-layer design for the declared stack — data model with a
+  migration outline, API contract, tenancy/authorization/auditing/logging, the
+  testability obligations the build must ship, a threat sketch, risks — plus
+  ADR-shaped decision records.
+- **When:** After `/yw:probe-spec` and before `/yw:build-feature`; again after a
+  reconciliation changes in-scope acceptance criteria.
+- **Where:** Reads the analysis and the active stack profile; writes
+  `60-design/tech-design.md` and its decision records.
+- **How:** Resolve the stack, delegate to the tech-designer agent with the
+  sliced analysis, review the returned design for invention, persist, and close
+  in one of the four dev-track states.
+
+### `forge-unit-tests`
+
+- **Why:** Case Forge routes calculation and internal-integration criteria to
+  developers in `dev-handoff.md`, and until now nothing consumed that file — a
+  routed criterion could quietly mean routed to nobody.
+- **What:** Developer-owned tests in the stack's real framework, one per routed
+  criterion, with expected values derived independently of the code under test,
+  plus the criterion-to-test map.
+- **When:** After `/yw:build-feature`, or test-first for a pure calculation;
+  again when the hand-off gains rows.
+- **Where:** Test files where the stack's conventions put them; the map under
+  the feature's `70-build` artifacts.
+- **How:** Resolve the stack, collect the routed set, write tests that would
+  fail if the behavior broke, run the configured commands, and record the map.
+
+### `forge-migration`
+
+- **Why:** A schema change is the one part of a feature that cannot be reverted
+  by deploying yesterday's build.
+- **What:** Migration files in the stack's own convention plus notes carrying
+  the safety argument on a populated database, the tenant scope, the rollback
+  story, and the verification output.
+- **When:** When the tech design's data model calls for schema or seed changes,
+  before the dependent code merges.
+- **Where:** Migration files where the stack keeps them; notes under the
+  feature's `70-build` artifacts.
+- **How:** Draft under the never-edit-applied / additive-first / two-step
+  NOT NULL / idempotent-seed rules, register per the stack, verify with the
+  configured command, and state the rollback story honestly.
+
+### `sync-styleguide`
+
+- **Why:** A design system dies by a thousand small exceptions; each is
+  invisible alone and together they are why products look assembled from parts.
+- **What:** A drift report reconciling implemented UI against the repository's
+  own styleguide and token source — raw literals, off-scale spacing,
+  unsanctioned variants, unapproved contrast pairs — with mechanical fixes
+  applied under `--fix`.
+- **When:** Before `/yw:review-code` on any change with UI in it, or
+  periodically with `--all`.
+- **Where:** Reads the repo-local design authority (never a bundled copy);
+  writes the drift report under `70-build`.
+- **How:** Run the repo's own design check first, sweep the scope for the drift
+  classes, cite the violated rule for every finding, and fix only what is
+  mechanical.
 
 ### `update-cases`
 
 - **Why:** Correct existing cases without losing identity or review history.
 - **What:** Amend affected scenarios and record downstream invalidations.
-- **When:** After clarified requirements, audit findings, specification/UI
+- **When:** After clarified requirements, review findings, specification/UI
   changes, or incorrect expected values.
 - **Where:** Edit configured feature and `20-cases` files in place; write an
   amendment record.
@@ -273,68 +380,29 @@ Substantive case changes are routed to `/yw:update-cases`.
 - **How:** Pass the exact request to the authoritative update skill and preserve
   its source, validation, and human-review rules.
 
-### `audit-cases`
-
-- **Why:** Catch design defects before human approval.
-- **What:** Independently review coverage, traceability, procedure, boundaries,
-  and data feasibility.
-- **When:** After Case Forge and after material amendments, before Design Gate,
-  unless a named allrounder explicitly waives the exact audit scope.
-- **Where:** Read feature, `10-spec`, and `20-cases`; write `30-case-audit`.
-- **How:** Freeze scope, lint it, use the independent auditor, classify
-  findings, and never edit cases during the audit.
-
 ### `gate-design`
 
-- **Why:** Prevent automation of incomplete or unapproved test design.
-- **What:** Assemble the design-stage evidence into a decision-ready report.
-- **When:** After Spec Probe and Case Forge, when Case Audit has passed or an
-  authorized human has explicitly waived it.
+- **Why:** Let a human decide whether this test design is good enough to build
+  automation on, in a five-minute read, and record what they decided.
+- **What:** An evidence digest of facts — AC and scenario counts, coverage
+  numbers, lint results, known implementation differences, and every gap —
+  followed by the human's recorded approval.
+- **When:** After Spec Probe and Case Forge to assemble the digest, and again when
+  a human states they have reviewed the cases and approve them.
 - **Where:** Read configured design artifacts; commit the Design Gate report
   beside the consumer ledger.
-- **How:** Recompute checks and expose gaps. A Domain Test Analyst signs
-  manually. If a named QA Lead or Automation Engineer allrounder directly says
-  the ready gate is approved, Claude records the human's name, role, decision,
-  date, confirmed automation set, ledger status, and waiver. The allrounder may
-  explicitly bypass Case Audit or the Design Gate while preserving every
-  finding and residual risk; a bare `approved` does not imply either bypass.
-
-### `bypass-gate`
-
-- **Why:** Let an accountable allrounder move past a gate or audit without
-  pretending missing or failed evidence passed.
-- **What:** Bypass Case Audit, Script Audit, both audits, Design Gate, Merge
-  Gate, Ops Gate, or all three gates for an exact feature/category scope.
-- **When:** Only after a named QA Lead or Automation Engineer explicitly says
-  to bypass the named audit/gate, all audits, or all gates.
-- **Where:** Update each applicable audit/gate report and the feature ledger,
-  with one waiver row per scope.
-- **How:** Preserve the real verdict and findings, record human identity,
-  reason, gaps, and residual risk, then let downstream stages accept only that
-  exact waiver. Script Audit waivers are bound to the exact TC inventory and
-  commit/file-hash manifest. `audits` and `all` are deliberately separate.
-
-### `owner-bypass`
-
-- **Why:** Let the PROBE owner make an explicit exception without exposing a
-  secret or silently weakening the process.
-- **What:** Authorize Tafseer Haider (`tafseer.haider@yieldwerx.com`) to waive
-  any exact PROBE stage, gate, audit, checklist, evidence, or ordering item.
-- **When:** Only when Tafseer directly requests a specific owner override.
-- **Where:** Keep the PIN and generated signing key in the user environment or
-  gitignored `.env`; keep the short-lived receipt under
-  `.probe/authorizations`; commit only the ledger waiver.
-- **How:** Tafseer runs `probe owner-bypass setup` once, then enters the PIN
-  through the hidden local authorization prompt. Claude verifies the signed,
-  scope-specific receipt, records the reason and residual risk, applies only
-  that bypass, and consumes the receipt.
+- **How:** Recompute coverage, gather the facts, list every gap plainly, present,
+  and stop — no verdict, no readiness stamp, no blocking checklist. On an explicit
+  human approval, append the ledger row with name, role, timestamp, what they
+  confirmed, and the evidence link, then unlock Case Sync and Script Forge. Claude
+  never writes an approval the human did not state.
 
 ### `sync-cases`
 
 - **Why:** Keep durable manual records and automation traceability synchronized.
 - **What:** Create/update configured case-management records and stable IDs.
-- **When:** After Design Gate approval or explicit allrounder bypass, and
-  whenever the authorized cases change.
+- **When:** After a recorded human Design Gate approval, and whenever the
+  authorized cases change.
 - **Where:** Read feature files, write `25-aio-sync`, and optionally call AIO.
 - **How:** Check connectivity, dry-run idempotently, obtain human approval for
   `--live`, and review write-backs.
@@ -342,7 +410,7 @@ Substantive case changes are routed to `/yw:update-cases`.
 ### `ui-recon`
 
 - **Why:** Replace guessed selectors with observed UI contracts.
-- **What:** Walk Design-Gate-approved or explicitly bypass-authorized cases,
+- **What:** Walk Design-Gate-approved cases,
   capture states, inventory selectors, log observability gaps, and optionally
   coordinate API Recon and assisted execution during the same actions.
 - **When:** After Design Gate and before Script Forge for reachable UI scope.
@@ -358,13 +426,45 @@ Substantive case changes are routed to `/yw:update-cases`.
 - **What:** Run exact Gherkin steps through Playwright MCP in one controlled
   browser batch and capture step-level results plus standardized failure
   evidence.
-- **When:** After Design Gate approval or exact allrounder bypass when a live UI
+- **When:** After a recorded human Design Gate approval when a live UI
   build is ready for assisted/manual execution.
 - **Where:** Drive the configured environment and write under
   `50-exploratory/executions`; never sync results to AIO directly.
 - **How:** Reuse the browser connection and same-role authentication, reset each
   independent case to a known state, capture failures before recovery, and
   route intermittent/app failures to Flake Triage or Bug Report.
+
+### `desktop-recon`
+
+- **Why:** Desktop scripting against unmapped objects rediscovers the
+  application one brittle hierarchy walk at a time, and the unfixable gaps are
+  one developer-set Name property away from being fixable.
+- **What:** The walked scope with screenshots, a Name Mapping inventory with
+  identification properties per the identity ladder, and the unnamed-control
+  gap list — the desktop's testid-gaps.
+- **When:** After the Design Gate approval and before
+  `/yw:forge-desktop-scripts`; again when a build changes the screens in scope.
+- **Where:** A reachable desktop build; artifacts under `40-desktop-recon`.
+  Never edits the TestComplete project.
+- **How:** Walk the approved cases' screens, record identity-ladder properties
+  per control, propose role-named aliases, and route the gap list to
+  `/yw:seed-testability`.
+
+### `forge-desktop-scripts`
+
+- **Why:** The desktop application produces the deliverable reports and had no
+  scripted coverage path — every desktop case was manual forever by default.
+- **What:** The approved `@desktop`-tagged scenarios imported unchanged into
+  TestComplete's Scenarios item, Python step definitions bound to the case's
+  own words, aliases-only object access, and `@automated` added only after a
+  real run.
+- **When:** After the Design Gate approval confirms the automation set, ideally
+  after `/yw:desktop-recon`.
+- **Where:** The team's TestComplete project and the feature's `60-scripts`
+  artifacts.
+- **How:** Freeze the TC scope, import without rewriting, bind Python steps per
+  the profile conventions, map per the Name Mapping policy, run the tagged
+  slice, and interpret exit codes per the CI contract.
 
 ### `api-recon`
 
@@ -381,11 +481,11 @@ Substantive case changes are routed to `/yw:update-cases`.
 
 - **Why:** Preserve manual evidence and learning outside scripted checks.
 - **What:** Record exploratory sessions, findings, and approved-case executions.
-- **When:** After Design Gate whenever human testing occurs or is consciously
-  waived.
+- **When:** After the Design Gate whenever human testing occurs, or when the team
+  records a decision not to do it.
 - **Where:** Write the consumer feature's `50-exploratory` records.
 - **How:** Define a charter, record build/data/results, route defects, and
-  distinguish unexecuted work from signed risk acceptance.
+  distinguish unexecuted work from a recorded decision to skip it.
 
 ### `forge-oracle`
 
@@ -402,8 +502,8 @@ Substantive case changes are routed to `/yw:update-cases`.
 - **Why:** Automate approved cases without changing their business meaning.
 - **What:** Implement selected scenarios and add `@automated` while retaining
   `@manual` and any `@visual` intent.
-- **When:** Only after Design Gate approval or explicit allrounder bypass and
-  for the confirmed parameterized scope, such as functional cases.
+- **When:** Only after a recorded human Design Gate approval, and only for the
+  confirmed parameterized scope, such as functional cases.
 - **Where:** Change consumer automation code/eligible tags and write
   `60-scripts` evidence.
 - **How:** Freeze TC scope, apply the active profile, implement visual cases
@@ -434,22 +534,26 @@ Substantive case changes are routed to `/yw:update-cases`.
 
 ### `audit-scripts`
 
-- **Why:** Block brittle, unsafe, or self-passing automation.
-- **What:** Independently audit code, assertions, data, and evidence.
-- **When:** After each Script Forge cycle and after material fixes, unless a
-  named allrounder explicitly waives the exact current manifest.
+- **Why:** A test that passes for the wrong reason is worse than no test, and the
+  context that wrote the automation is the worst placed to notice.
+- **What:** An independent read-only review of code, assertions, data, and
+  evidence — findings for a human to weigh. **Advisory: it holds no ledger row and
+  blocks nothing.**
+- **When:** Whenever a fresh reading would help — after a Script Forge cycle,
+  before the Merge Gate, or when a passing suite feels wrong. Optional.
 - **Where:** Inspect consumer implementation plus `60-scripts`; write
   `70-script-audit`.
-- **How:** Pin commit/TC scope, run configured checks, use a read-only auditor,
-  and fail closed on unresolved high-risk findings. An explicit bypass routes
-  through `bypass-gate` and preserves the real findings and risk.
+- **How:** Pin commit/TC scope, run configured checks, use a read-only reviewer,
+  and report severity-ranked findings verbatim into the Merge Gate digest. A
+  labelled self-review is useful when no independent reviewer exists; one presented
+  as independent is not.
 
 ### `green-run`
 
 - **Why:** Prove repeatable reliability rather than a single lucky pass.
 - **What:** Produce a diagnosed consecutive-green execution record.
-- **When:** After Script Audit passes or an exact manifest-bound allrounder
-  Script Audit waiver is current; restart after every automation fix.
+- **When:** After a Script Forge cycle has produced runnable scenarios; restart the
+  streak after every automation fix.
 - **Where:** Run in configured CI-equivalent conditions; write `80-green-run`.
 - **How:** Execute exact scope three times green by default, record provenance,
   reset on failure, and route intermittent behavior to Flake Triage.
@@ -457,22 +561,22 @@ Substantive case changes are routed to `/yw:update-cases`.
 ### `gate-merge`
 
 - **Why:** Keep unstable or insufficiently evidenced automation out of main.
-- **What:** Assemble scripting, audit, stability, coverage, and observability
-  evidence.
-- **When:** After complete Script Forge, a Script Audit PASS or exact current
-  waiver, and Stability Run.
+- **What:** An evidence digest of facts from Script Forge, the Stability Run,
+  coverage, observability contracts, and any advisory review.
+- **When:** After Script Forge and the Stability Run, and again when a human states
+  they approve the merge.
 - **Where:** Read consumer evidence; commit the Merge Gate report by the ledger.
-- **How:** Cross-check current-commit evidence, regenerate coverage, expose
-  gaps, and request human sign-off. A Script Audit waiver satisfies only that
-  audit prerequisite; any resulting Merge Gate waiver is a separate explicit
-  decision. Every bypass keeps the real readiness and residual risk visible.
+- **How:** Cross-check the evidence against one commit manifest, refresh coverage,
+  list every gap plainly, present, and stop. On an explicit human approval, append
+  the ledger row with name, role, and timestamp. The approval is a QA decision — it
+  never merges the branch or satisfies branch protection.
 
 ### `testops-promote`
 
 - **Why:** Make merged automation reliable and observable in steady-state CI.
 - **What:** Configure slices, reporting, retention, failure policy, and budgets.
-- **When:** After a signed or explicitly allrounder-bypassed Merge Gate and the
-  actual merge to the integration branch.
+- **When:** After a recorded human Merge Gate approval and the actual merge to the
+  integration branch.
 - **Where:** Change consumer CI/config on a branch and write `90-testops`.
 - **How:** Run slices as CI will, validate reports/archives, measure duration,
   reject unexplained quarantine, and require a real pipeline run.
@@ -480,14 +584,80 @@ Substantive case changes are routed to `/yw:update-cases`.
 ### `gate-ops`
 
 - **Why:** Require durable proof before automation is declared complete.
-- **What:** Assemble CI history, reports, flake rate, sync, evidence retention,
-  and manual-only inventory.
-- **When:** After TestOps Promotion and the required real CI runs.
+- **What:** An evidence digest of facts — CI history, report history, flake rate,
+  external sync state, coverage rungs, and the manual-only inventory with each
+  disposition.
+- **When:** After TestOps Promotion and the required real CI runs, and again when a
+  human states they approve.
 - **Where:** Read provider/consumer evidence; commit the Ops Gate report.
-- **How:** Verify provenance and thresholds, enumerate exceptions, leave
-  signatures blank, and require human approval. A named allrounder may
-  explicitly bypass the gate; record `Done — Ops Gate bypassed` and retain the
-  residual risk.
+- **How:** Verify provenance, measure flake against actual executions, list every
+  gap, present, and stop. On an explicit human approval, append the ledger row and
+  record the automation as **Done**, carrying every outstanding expiry or backfill
+  obligation into the outcome line.
+
+### `review-pr`
+
+- **Why:** A pull request carries claims — a description, a linked requirement,
+  test evidence — and a tired approver skimming green checkmarks does not check
+  them against the diff.
+- **What:** A review artifact reconciling claims with the actual diff,
+  requirement coverage by criterion id, severity-ranked findings, the
+  downstream-invalidation list, and a GO / NO-GO recommendation.
+- **When:** When a PR is opened or updated — after `/yw:ship-change`, or on a
+  teammate's PR before approving.
+- **Where:** Reads the PR through the host CLI (`gh` for GitHub, `az repos` for
+  Azure DevOps); writes the artifact locally; posts to the host only under
+  `--post` with explicit authorization.
+- **How:** Freeze the head commit, verify every claim against the diff, review
+  with the code-reviewer agent, check the evidence, and recommend — never
+  merge.
+
+### `handoff`
+
+- **Why:** Skill-to-skill continuity works; session-to-session does not — an
+  interrupted session loses which branch, which verification passed, and what
+  the next move was, and the next session pays to rebuild it.
+- **What:** A one-minute handoff the next session can act on: state, unverified
+  versus verified work, open problems, decisions, rejected approaches, one next
+  step, and a resume command.
+- **When:** At any stopping point mid-work on either track; `close` when the
+  work lands; `list` to see what is open.
+- **Where:** The configured artifacts directory under `handoffs/`; committable,
+  never carrying secrets or tenant data.
+- **How:** Establish the facts from git and real verification output — never
+  memory — write the fixed sections, and keep `not run` honest.
+
+### `forge-security-tests`
+
+- **Why:** A scanner tells you a header is missing; it cannot tell you a
+  pharmacist can read another clinic's patients. The access-control,
+  insecure-design, authentication, and logging categories are authored cases.
+- **What:** Gherkin scenarios for the authored OWASP 2025 categories, each
+  tagged `@testtype:security` and one `@owasp:ANN`, plus a coverage map
+  reconciling every category to authored, scanned, or a specific N/A.
+- **When:** After Spec Probe, ideally after `/yw:forge-tech-design` produced a
+  threat sketch; alongside `/yw:forge-cases`.
+- **Where:** `<category>-security.feature` files; the coverage map under
+  `20-cases`. Repository-only.
+- **How:** Design against the requirement's own permission/auth/logging rules —
+  never the app's current behavior — tag by category, and route the scannable
+  categories to `/yw:scan-security`.
+
+### `scan-security`
+
+- **Why:** The value is not in running a scanner but in driving the right
+  verbs, mapping output to categories, and separating real findings from the
+  noise that gets a scanner switched off.
+- **What:** A triaged scan report — findings mapped to OWASP category and the
+  PROBE severity ladder, sorted into confirmed / needs-review / noise, with the
+  confirmed ones routed to `/yw:bug-report`.
+- **When:** Dependency and SAST verbs freely (read-only); DAST and fuzz against
+  an authorized target after a build is deployed.
+- **Where:** Reads the repo or a running target; writes under `75-security`.
+  Never a shared or production target without an approved window.
+- **How:** Resolve verbs and engines from the swappable adapter contract,
+  enforce target authorization on active verbs, run, normalize, triage, and
+  route — failing closed on an unauthorized active scan.
 
 ### `bug-report`
 
@@ -638,7 +808,7 @@ Installed commands are namespaced, for example:
 /yw:update-yieldwerx-knowledge
 ```
 
-All 34 `yw:*` skills are explicitly user-invocable and appear in the
+All 42 `yw:*` skills are explicitly user-invocable and appear in the
 slash-command menu. Repository validation fails if a public skill is hidden.
 
 ### One entry point per skill
@@ -650,13 +820,53 @@ validation fails if one appears.
 2.13.0 briefly added a `commands/<name>.md` shim per skill, on the theory that
 Claude Desktop builds its `/` menu from `commands/` while Claude Code uses
 `skills/`. That theory is wrong: the loader merges both directories into one
-registry, so shipping both registered all 34 names twice and the collision
+registry, so shipping both registered every name twice and the collision
 stopped the plugin from registering anything at all in Claude Desktop — no
 skills and no commands. It also added roughly 4,100 always-on tokens to every
 session. 2.13.1 reverted it.
 
 Verify any layout change with `claude plugin details yw@yieldwerx` and confirm
 the reported skill count equals the number of directories under `skills/`.
+
+## Hosts without a shell (Claude Desktop)
+
+Every PROBE capability with an executable behind it — Case Sync, the spec
+validator, Gherkin lint, the coverage report — used to be reachable only through a
+shell command. Claude Code has a Bash tool, so that worked. **Claude Desktop runs
+processes but gives the assistant no shell**, so on Desktop `/yw:sync-cases` had no
+engine at all and the other three were unreachable for the same reason.
+
+The plugin now ships a dependency-free stdio MCP server and declares it in its
+manifest, so **installing the plugin is the whole setup**:
+
+```json
+"mcpServers": {
+  "probe-tools": {
+    "command": "node",
+    "args": ["${CLAUDE_PLUGIN_ROOT}/adapters/mcp/server.mjs"],
+    "env": { "CLAUDE_PROJECT_DIR": "${CLAUDE_PROJECT_DIR}" }
+  }
+}
+```
+
+It exposes the sync verbs — `aio_check`, `aio_whoami`, `aio_folders`, `aio_cases`,
+`aio_plan`, `aio_sync` — plus `probe_validate_spec`, `probe_lint_cases`, and
+`probe_coverage`. Each one spawns the same bundled script the CLI runs, so a
+capability behaves identically whichever front end reached it. Credentials come
+from the environment or the consumer's gitignored `.env`, never from the manifest.
+
+**The live write carries its own confirmation.** The guard that normally asks
+before a live AIO sync is a PreToolUse hook on the *Bash* tool; on the MCP path
+there is no Bash call, so it never fires. `aio_sync` therefore refuses without
+`confirm: true`, and the adapter beneath it still refuses without a recorded human
+Design Gate approval. Both must pass.
+
+`/yw:sync-cases` probes the host and picks one of three engines — **CLI** when a
+shell exists, **MCP** when the tools are present, and an **export bundle** when
+neither, which writes an importable file plus the exact tag edits a later run will
+apply and records the stage as `blocked`, never `done`. It always says which
+engine it used: a quiet fallback looks exactly like a sync that worked. Contract:
+[case-management.md](plugins/yieldwerx-probe/references/integrations/case-management.md).
 
 ## Consumer contract
 
@@ -687,7 +897,7 @@ identically either way — only reachability differs.
 
 It must not be a declared dependency. Claude Code disables a plugin whose
 declared dependency is unsatisfied, and a dependency in a marketplace the user
-has not added is left unresolved. Through 2.13.1 that disabled all 34 `yw`
+has not added is left unresolved. Through 2.13.1 that disabled every `yw`
 skills for every user without the knowledgebase — while an owner machine, where
 it happens to be installed, looked completely healthy. Repository validation now
 fails if either the manifest declares dependencies or the marketplace re-adds
@@ -696,7 +906,7 @@ fails if either the manifest declares dependencies or the marketplace re-adds
 Only `/yw:ask-yieldwerx` and `/yw:update-yieldwerx-knowledge` consult it. Their
 small adapters forward to the authoritative knowledge skills, do not copy product
 facts into this repository, and state plainly when the knowledgebase is missing
-or disabled rather than guessing. The other 32 skills never touch it. In Spec
+or disabled rather than guessing. The other 40 skills never touch it. In Spec
 Probe, that knowledge is context only; the provided requirement remains the sole
 requirement authority. If required knowledge is unavailable, the workflow records
 the missing context instead of guessing from the application.

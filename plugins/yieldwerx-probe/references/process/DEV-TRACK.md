@@ -67,18 +67,25 @@ each skill states what it does when the upgrade is absent.
 | Skill | Track role |
 | --- | --- |
 | `/scaffold-app` | Stand up an application whose QA contracts exist from the first commit. |
+| `/forge-tech-design` | Spec analysis → the technical design for the declared stack, with decision records. |
+| `/forge-unit-tests` | The developer-owned coverage the spec routed to unit/integration level. |
+| `/forge-migration` | Schema and data changes as safe, registered, verified migrations. |
+| `/sync-styleguide` | Implemented UI reconciled against the repository's own design authority. |
 | `/build-feature` | Approved requirement → implemented, verified capability. |
 | `/revise-feature` | Change existing behaviour compatibly, and name what it invalidates. |
 | `/fix-defect` | A PROBE bug candidate → failing test → smallest correct fix. |
 | `/seed-testability` | A recon gap list → shipped selector and document contracts. |
 | `/review-code` | Independent adversarial review of application code. |
 | `/ship-change` | Hygiene, commits, and a pull request carrying the evidence. |
+| `/review-pr` | The opened pull request reviewed as its reviewer: claims versus diff, GO / NO-GO. |
+| `/handoff` | Session-to-session continuity: the picture the next session needs, facts from git, one next step. |
 
 ## 3. Agents
 
 | Agent | Used by |
 | --- | --- |
-| `requirement-clarifier` | `/build-feature`, `/revise-feature` — refuses to assume. |
+| `requirement-clarifier` | `/build-feature`, `/revise-feature` — refuses to assume; every open question carries a recommended answer. |
+| `tech-designer` | `/forge-tech-design` — maps the analysis onto the profile's real layers; refuses to invent stack facts. |
 | `build-verifier` | `/build-feature`, `/revise-feature`, `/fix-defect`, `/review-code` — exact failures. |
 | `code-reviewer` | `/review-code`, `/ship-change` — adversarial application-code review. |
 | `testability-scout` | `/seed-testability`, `/build-feature`, `/revise-feature` — observability gaps. |
@@ -212,13 +219,61 @@ analysis from one done with a paragraph.
 The dependency runs one way only: **the QA track may observe what the dev track
 built; the dev track never waits for the QA track to decide anything.**
 
-### D9 — Local, secret-free, and reversible
+### D9 — One skill set, many stacks: routing is a profile, never a fork
+
+Dev-track skills are stack-agnostic and resolve every stack fact — layers,
+conventions, commands, traps — from the active stack profile
+(`references/profiles/README.md` carries the contract and the resolution
+order for `--stack`). Adding a stack is a profile, never a new skill, and a
+skill that cannot resolve a stack stops and asks rather than guessing: a design
+mapped onto the wrong layer model is confidently wrong in every detail.
+
+A skill records which stack it resolved and how, and says explicitly when the
+profile is marked **provisional** — a provisional profile carries approved
+direction, not verified facts, and nothing built against it may cite it as
+evidence of how existing code works.
+
+### D10 — Spec Probe is shared, and the analysis is jointly owned
+
+`/probe-spec` belongs to both tracks (`track: shared`). One `spec-analysis.md`
+exists per feature; dev and QA read the same one, whoever runs it second reads
+the existing artifact (the unqualified rerun fails closed), and a requirement
+change goes through `--reconcile` so the downstream impact lands on both tracks
+at once. The dev track's `/forge-tech-design` consumes the analysis exactly as
+Case Forge does — never the raw PRD (token policy P7), and never a private
+re-reading of it.
+
+### D11 — Local, secret-free, and reversible
 
 Work happens on `feat/<slug>` or `fix/<slug>`, never on a deployment branch, and
 never against a shared environment. Unrelated working-tree changes are preserved
 — never reverted, stashed away, or overwritten. Secrets, tokens, connection
 strings, and machine-specific absolute paths never enter code, configuration, a
 commit message, a pull-request body, or an artifact.
+
+
+### D12 — Every dev skill ends in exactly one of four states
+
+`COMPLETE` · `COMPLETE_WITH_NOTES` · `BLOCKED` · `NEEDS_INFO`. The vocabulary
+is closed on purpose: "mostly done", "almost there", and "should be working
+now" all hide which of the four is actually true, and the reader has to ask.
+
+| State | Means | Required with it |
+| --- | --- | --- |
+| `COMPLETE` | Done, and verified by something that was actually run | the command and its real result |
+| `COMPLETE_WITH_NOTES` | Done, with something the user should know | the notes, each actionable or explicitly FYI |
+| `BLOCKED` | Cannot proceed without something outside the session's control | what blocks, who or what unblocks it, and what was done up to that point |
+| `NEEDS_INFO` | Cannot proceed without a decision only the user can make | the question, **and the answer you recommend** |
+
+`NEEDS_INFO` always carries a recommended default — a question posed without a
+stance offloads the design onto the user and makes them reconstruct context the
+skill already has. If the decision is genuinely theirs alone (a product call, a
+spend, a risk they own), say that too; knowing it is not a technical question is
+itself the useful part.
+
+Never report `COMPLETE` for work whose verification was not run. `BLOCKED` on
+an unrun verification is an honest outcome; a `COMPLETE` that turns out red
+costs the next session more than the honesty would have.
 
 ## 5. Severity
 

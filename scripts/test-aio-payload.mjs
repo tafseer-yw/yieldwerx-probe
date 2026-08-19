@@ -17,6 +17,8 @@
  */
 
 import assert from 'node:assert/strict';
+import fs from 'node:fs';
+import path from 'node:path';
 import {
   aioCaseUrl,
   aioDatasets,
@@ -24,6 +26,9 @@ import {
   writableCaseDetails,
   bddStepType,
   definedOnly,
+  isDesignGateAuthorized,
+  readCategoryGate,
+  isCategoryGateAuthorized,
 } from '../plugins/yieldwerx-probe/adapters/aio/scripts/aio-sync.ts';
 
 let failures = 0;
@@ -207,6 +212,162 @@ check('undefined fields are dropped rather than overwriting real values', () => 
 
 check('the TC id travels as automationKey so write-back can find the case', () => {
   assert.equal(build(scenario()).automationKey, 'TC-101');
+});
+
+// --- trap 10: only an approval row authorizes a live push --------------------
+//
+// `isDesignGateAuthorized` is the last thing between a tool call and a
+// destructive write to the production Jira tenant, so it is executed here rather
+// than asserted by string presence.
+//
+// The specific hazard: a 3.0 ledger's stage table also carries
+// `DESIGN GATE | … | done`, which the gate skill sets when it records an
+// approval. An earlier revision consulted the pre-3.0 stage-status fallback
+// whenever the approvals table held no matching row — so a ledger built straight
+// from the new template, with an empty approvals table, authorized a live push.
+
+const fixtureSlug = 'probe-gate-authorization-fixture';
+const fixtureDir = path.join(process.cwd(), 'docs', 'qa', fixtureSlug);
+
+function withLedger(body, assertion) {
+  fs.mkdirSync(fixtureDir, { recursive: true });
+  fs.writeFileSync(path.join(fixtureDir, 'LEDGER.md'), body);
+  try {
+    assertion();
+  } finally {
+    fs.rmSync(path.join(process.cwd(), 'docs', 'qa', fixtureSlug), {
+      recursive: true,
+      force: true,
+    });
+  }
+}
+
+const stageTable = `| Stage | Skill | Status |
+| ----- | ----- | ------ |
+| DESIGN GATE | /gate-design | done |
+`;
+const approvalsHeader = `
+## Gate approvals (human decisions)
+
+| Gate | Scope | Approved by | Role | Timestamp | Confirmed | Evidence |
+| ---- | ----- | ----------- | ---- | --------- | --------- | -------- |
+`;
+
+check('a 3.0 ledger with an EMPTY approvals table does not authorize a push', () => {
+  withLedger(
+    `${stageTable}${approvalsHeader}|      |       |             |      |           |           |          |\n`,
+    () => {
+      assert.equal(
+        isDesignGateAuthorized(fixtureSlug),
+        false,
+        'an empty approvals table plus a done stage row must never authorize',
+      );
+    },
+  );
+});
+
+check('a 3.0 ledger with a named, timestamped approval row authorizes', () => {
+  withLedger(
+    `${stageTable}${approvalsHeader}| Design Gate | feature | A Reviewer | QA Lead | 2026-08-18 21:14 | Reviewed all cases | [report](x.md) |\n`,
+    () => {
+      assert.equal(isDesignGateAuthorized(fixtureSlug), true);
+    },
+  );
+});
+
+check('an approval row without a timestamp does not authorize', () => {
+  withLedger(
+    `${stageTable}${approvalsHeader}| Design Gate | feature | A Reviewer | QA Lead |  | Reviewed | x |\n`,
+    () => {
+      assert.equal(isDesignGateAuthorized(fixtureSlug), false);
+    },
+  );
+});
+
+check('a category-scoped approval does not authorize the whole feature', () => {
+  withLedger(
+    `${stageTable}${approvalsHeader}| Design Gate | CAT-01 | A Reviewer | QA Lead | 2026-08-18 21:14 | Reviewed CAT-01 | x |\n`,
+    () => {
+      assert.equal(isDesignGateAuthorized(fixtureSlug), false);
+    },
+  );
+});
+
+check('a pre-3.0 ledger with no approvals table still honours its stage status', () => {
+  withLedger(stageTable, () => {
+    assert.equal(isDesignGateAuthorized(fixtureSlug), true);
+  });
+});
+
+check('a superseded (struck-through) category approval does not authorize a push', () => {
+  withLedger(
+    `## Gate approvals (human decisions)
+
+| Category | ACs | Case Forge | Approved by | Role | Timestamp | Confirmed | \`@auto:now\` |
+| -------- | --- | ---------- | ----------- | ---- | --------- | --------- | ----------- |
+| CAT-01 | AC-01 | ~~done~~ | ~~Jane~~ | ~~QA Lead~~ | ~~2026-01-01 10:00~~ | ~~ok~~ | ~~TC-1~~ |
+`,
+    () => {
+      assert.equal(
+        isCategoryGateAuthorized(readCategoryGate(fixtureSlug, 'CAT-01')),
+        false,
+        'a revoked category approval must never authorize a live production write',
+      );
+    },
+  );
+});
+
+check('a live category approval with a name and timestamp authorizes that category', () => {
+  withLedger(
+    `## Gate approvals (human decisions)
+
+| Category | ACs | Case Forge | Approved by | Role | Timestamp | Confirmed | \`@auto:now\` |
+| -------- | --- | ---------- | ----------- | ---- | --------- | --------- | ----------- |
+| CAT-01 | AC-01 | done | A Reviewer | QA Lead | 2026-08-19 10:00 | ok | TC-1 |
+`,
+    () => {
+      assert.equal(isCategoryGateAuthorized(readCategoryGate(fixtureSlug, 'CAT-01')), true);
+    },
+  );
+});
+
+check('an empty approvals table does not fall through to a later stage-table row', () => {
+  withLedger(
+    `## Gate approvals (human decisions)
+
+| Gate | Scope | Approved by | Role | Timestamp | Confirmed | Evidence |
+| ---- | ----- | ----------- | ---- | --------- | --------- | -------- |
+|      |       |             |      |           |           |          |
+
+## Stage table
+
+| Stage | Skill | Status |
+| ----- | ----- | ------ |
+| DESIGN GATE | /gate-design | done |
+`,
+    () => {
+      assert.equal(
+        isDesignGateAuthorized(fixtureSlug),
+        false,
+        'a present-but-empty approvals table blocks the legacy fallback',
+      );
+    },
+  );
+});
+
+check('a pre-3.0 bypass or hibernation never authorizes', () => {
+  for (const status of ['waived — allrounder gate bypass', 'hibernated — evaluation mode']) {
+    withLedger(
+      `| Stage | Skill | Status |\n| ----- | ----- | ------ |\n| DESIGN GATE | /gate-design | ${status} |\n`,
+      () => {
+        assert.equal(
+          isDesignGateAuthorized(fixtureSlug),
+          false,
+          `a retired override (${status}) must not authorize a live write`,
+        );
+      },
+    );
+  }
 });
 
 if (failures) {

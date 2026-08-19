@@ -194,94 +194,57 @@ rules, notch orientation).
 > Gallery View chart. The fixture/oracle implementation stays outside the
 > feature steps. Its AIO id stays pending until Case Sync pushes it.
 
-## Stage 4 — Case Audit · runs itself
-
-```
-/audit-cases <feature-slug>
-```
-
-> Run the adversarial test-case audit for `<feature-slug>` — attack
-> coverage, traceability, atomicity, negative and boundary depth, and data
-> feasibility.
-
-**You get:** `30-case-audit/case-audit.md` with severity-ranked findings and
-an overall PASS/FAIL.
-
-**If FAIL:** use `/update-cases` to amend existing cases in place. Use
-`/forge-cases` only when the finding requires a genuinely new scenario, then
-re-audit. Rework history stays visible in the ledger.
-
-**Allrounder bypass:** a named QA Lead or Automation Engineer may explicitly
-say `bypass Case Audit` for the whole feature or one category. Claude does not
-delete or soften the audit. It marks the exact scope waived and records the
-reason, known findings or missing review, residual risk, identity, role, date,
-and direct-session authorization. A bare `approved` does not imply this
-bypass.
-
-> **Example:** the first Case Audit returned **FAIL** with five findings —
-> untested 4-connectivity boundary, ATDF ingest uncovered, a missing
-> queue-failure negative case, a circular mock-DB check, and a phantom DB
-> layer in one case. Rework → audit #2 **PASS** with every pinned number
-> arithmetically verified. The read-only auditor could not "fix" its way to
-> agreement — that is why the PASS means something.
-
-## Stage 5 — Design Gate · approved by a human
+## Stage 4 — Design Gate · a human decides
 
 ```
 /gate-design <feature-slug>
 ```
 
-> Assemble the Design Gate evidence report for `<feature-slug>`.
+> Assemble the Design Gate evidence digest for `<feature-slug>`.
 
-**You get:** `docs/qa/<feature-slug>/audit/gate-design.md` with an approval
-block and a ready/not-ready decision.
+**You get:** `docs/qa/<feature-slug>/audit/gate-design.md` — a digest of facts.
+AC and scenario counts, the `@testtype:` breakdown, the routing reconciliation,
+the design-coverage percentage with every uncovered AC named, the lint result,
+open questions that control an expected value, and a **Gaps and open items**
+section listing everything missing or failing. No `READY`/`NOT READY` stamp, no
+✅/❌ checklist, and no recommendation.
 
-**To sign:** the Domain Test Analyst reads the report, **confirms the
-`@auto:now` automation set** (editing the recommendation if they disagree — the
-human decision policy P8 requires), records it in the ledger, then edits the
-ledger's Design Gate block
-(`Approved by: <name> · Role: Domain Test Analyst · Date: <date> · Decision: approved`)
-and the gate report, and
-commits.
+**To approve:** read the digest — it is built for a five-minute read — confirm
+the `@auto:now` automation set (edit the recommendation if you disagree; the
+decision is yours under policy P8), and say so:
 
-**Allrounder shortcut:** when the report is `READY`, a named QA Lead or
-Automation Engineer may simply tell Claude `approved`. Claude then writes the
-human's name, role, approval, current date, confirmed `@auto:now` set, Design
-Gate `done` status, and the standard solo-allrounder waiver into both files.
-The allrounder does not need to edit or date anything. This is transcription
-of a human decision, not Claude approving its own work.
+> I have reviewed all the cases and I approve them.
 
-If Case Audit is the only blocker, the allrounder may say
-`bypass Case Audit and approve`; Claude records a separate audit waiver and
-residual risk before approving. Other blockers stay open.
+Claude then appends one row to the ledger's **Gate approvals** table: the gate,
+the scope, your name, your role, a `YYYY-MM-DD HH:MM` timestamp, what you said
+you reviewed, and a link to the digest. It writes
+`Recorded by: Claude — transcribed from the human's direct approval`, fills the
+same block in the report, and sets the Design Gate stage to `done`. Case Sync and
+Script Forge unlock.
 
-**Design Gate bypass:** a named QA Lead or Automation Engineer may instead say
-`bypass Design Gate` even when the report is `NOT READY`. Claude keeps that
-readiness and every failed/missing check visible, records
-`Decision: bypassed` and `waived — allrounder gate bypass`, and carries the
-current proposed `@auto:now` set unless the allrounder narrows it. This is not
-approval and does not silently bypass Case Audit.
+**Approving with gaps listed is a real decision** and is recorded as exactly
+that — the gaps stay visible in the report. What Claude will not do is remove a
+gap from the digest to make the decision look cleaner.
 
-**PROBE Owner override:** Tafseer Haider
-(`tafseer.haider@yieldwerx.com`) may waive any exact PROBE item after creating a
-short-lived PIN-authorized receipt with `probe owner-bypass authorize`. Tafseer
-enters the PIN only in the hidden local terminal prompt and gives Claude only
-the receipt path. Claude verifies the scope, records the authorization ID and
-risk, applies that exact bypass, and consumes the receipt.
+`continue`, `go ahead`, and `looks fine` are not approvals; Claude will ask which
+you mean. Any role may approve. Claude never writes an approval nobody stated.
 
-`/forge-scripts` will automate only the confirmed or bypass-recorded
-`@auto:now` scenarios.
+**Per category:** `/gate-design <feature-slug> --category CAT-03` assembles and
+approves one category, so team members work categories in parallel. A category
+approval authorises `/sync-cases --live --category CAT-03` and scripting for that
+category only.
 
-> **No scripting before a Design Gate decision.** `/forge-scripts` checks the
-> ledger and refuses while Design Gate has neither recorded human approval nor
-> an exact allrounder gate bypass.
+> **No scripting before a Design Gate approval.** `/forge-scripts` checks the
+> ledger's Gate approvals table and refuses while there is no row naming a human
+> with a timestamp for the scope. That is the only place PROBE blocks.
 
-> **Example:** the Design Gate report is stamped **READY**. The QA Lead says
-> `approved`. Claude records the QA Lead's known name and role, today's date,
-> the approved `@auto:now` set, and the waiver, then marks Design Gate `done`.
-> If the speaker is not a known allrounder, the approval block stays empty.
+> **Example:** the digest reports 31 scenarios, design coverage 97%, lint clean,
+> and two gaps — `AC-09` has no scenario, and `Q-04` (the sigma default) is still
+> open. The QA Lead approves anyway, noting that `AC-09` is scheduled for the next
+> cycle. The row records that; the two gaps stay in the report. A month later
+> anyone can see exactly what was known when the decision was made.
 
-## Stage 6 — Case Sync (AIO Tests) · Manual QA / Automation Engineer
+## Stage 5 — Case Sync (AIO Tests) · Manual QA / Automation Engineer
 
 Run the consumer's configured `syncCases` command first in its default dry-run
 mode. After human approval, repeat it with the explicit `--live` flag.
@@ -309,7 +272,7 @@ write-backs (`git diff features/`) before committing.
 > Design Gate without recorded approval — refused `--live` with both reasons, exactly as
 > designed.
 
-## Stage 7 — Exploratory Run · Manual QA Engineer
+## Stage 6 — Exploratory Run · Manual QA Engineer
 
 The cases are now approved — they are executable by hand immediately, and
 manual results are real gate evidence.
@@ -398,7 +361,7 @@ the anti-pattern this design exists to avoid. Full walkthrough (plant a bug
 in the demo app → candidate → classify → file → restore):
 [docs/bug-lifecycle.md](../profiles/playwright-bdd/docs/bug-lifecycle.md).
 
-## Stage 8 — UI Recon (optional but recommended) · any role
+## Stage 7 — UI Recon (optional but recommended) · any role
 
 Only when a UI environment is reachable:
 
@@ -422,7 +385,7 @@ gaps become dev tickets). Scripting from harvested locators beats guessing.
 > browser walk, harvesting the locator inventory and flagging any chart
 > container missing a `data-testid` (severity `high`).
 
-## Stage 9 — Script Forge · Automation Engineer
+## Stage 8 — Script Forge · Automation Engineer
 
 ```
 /forge-scripts <feature-slug>
@@ -457,47 +420,49 @@ expected/actual/diff evidence is available. Missing visual infrastructure is a
 It permanently retains `@manual`, never deletes or re-authors an approved
 scenario, and leaves `@auto:next/later` manual-only until successive Script
 Forge cycles automate them. The
-skill refuses if Design Gate has neither recorded human approval nor an exact
-allrounder bypass (that's policy P4 working, not a bug).
+skill refuses if the ledger's Gate approvals table has no Design Gate row naming a
+human with a timestamp for the scope (that's policy P4 working, not a bug).
 A scoped cycle may be done while feature-level scripting remains incomplete.
 
-> **Example:** without a recorded Design Gate approval or allrounder bypass,
-> `/forge-scripts` **refuses** and points at the empty ledger decision block.
-> Once either human decision is recorded it produces
+> **Example:** without a recorded Design Gate approval, `/forge-scripts`
+> **refuses** and points at the empty Gate approvals table.
+> Once the human decision is recorded it produces
 > branch `e2e/wafer-map-cluster-detection` and the five scenarios in
 > `features/demo/cluster-detection.feature` — each asserting the chart
 > against the numerical oracle.
 
-## Stage 10 — Script Audit · runs itself
+## Stage 9 — Script Review · advisory, optional, any time
 
 ```
 /audit-scripts <feature-slug>
 /audit-scripts <feature-slug> --scenario-type functional
 ```
 
-> Run the adversarial script audit for `<feature-slug>`: locator policy, no
-> hard waits, render sync, verification depth, traceability, self-passing
-> test detection.
+> Run an independent script review for `<feature-slug>`: locator policy, no hard
+> waits, render sync, verification depth, traceability, self-passing test
+> detection.
 
-**If FAIL:** fix on the branch (rerun Stage 9 with the findings), re-audit.
-A scoped audit reports `SUBSET PASS/FAIL` with exact TC ids and never certifies
-the rest of the feature.
+**This is advisory.** It holds no ledger row, gates nothing, and needs no waiver
+— there is nothing to bypass. `/green-run` runs without it and the Merge Gate
+assembles without it; if it was never run, the Merge Gate digest says so in one
+line and the human decides whether that matters.
 
-**Allrounder bypass:** a named QA Lead or Automation Engineer may explicitly
-say `bypass Script Audit` for the whole feature or one category. Route to
-`/bypass-gate <feature> script-audit`. Claude keeps the real audit verdict and
-findings (or records `not assembled`), binds the waiver to the exact TC
-inventory and commit/file-hash manifest, and records the reason and residual
-risk. The waiver lets Stability Run begin for that exact scope; it is not PASS,
-becomes stale after any script change, and does not bypass Merge Gate.
+Run it when a fresh reading would help: after a Script Forge cycle, before the
+Merge Gate, or when a suite passes and something about that feels wrong. Findings
+are severity-ranked facts, not a verdict — fix them on the branch (rerun Stage 8),
+or carry them into the Merge Gate digest for a human to weigh.
 
-> **Example:** the first Script Audit returned a **blocker** — a mock-mode DB
-> step asserted rows the test itself had seeded, presented as engine
-> evidence. Rework made it honest (annotated `EMULATED`, live-DB verification
-> deferred to `TODO(env)`), fixed a hover-flake `high` plus ten more
-> findings, then re-audited and re-ran the green screen.
+Independence is still the point: the context that wrote the automation is the worst
+placed to notice a self-passing test. When no independent reviewer is available the
+artifact says so and reports the findings as a labelled self-review.
 
-## Stage 11 — Stability Run · Automation Engineer
+> **Example:** the first review returned a **blocker** — a mock-mode DB step
+> asserted rows the test itself had seeded, presented as engine evidence. Rework
+> made it honest (annotated `EMULATED`, live-DB verification deferred to
+> `TODO(env)`), fixed a hover-flake `high` plus ten more findings, then re-ran the
+> green screen.
+
+## Stage 10 — Stability Run · Automation Engineer
 
 ```
 /green-run <feature-slug>
@@ -508,9 +473,8 @@ becomes stale after any script change, and does not bypass Merge Gate.
 > consecutive, recording every run. Diagnose failures — never rerun blindly,
 > never green by deletion or retries.
 
-A scoped Stability Run requires a matching scoped Script Audit PASS or current
-manifest-bound waiver and records subset evidence only. Merge Gate still
-requires the complete confirmed automation set.
+A scoped Stability Run records subset evidence only, and the Merge Gate digest
+states that plainly so the human approving it knows what the subset was.
 
 **You get:** `80-green-run/green-run.md` with the run log. A failure resets
 the streak and gets a root-cause note (flake-hunter helps).
@@ -522,32 +486,35 @@ the streak and gets a root-cause note (flake-hunter helps).
 > `WRONG-DATA (severity: blocker)` and reset the streak, because wrong yield
 > numbers are the worst failure this product can have.
 
-## Stage 12 — Merge Gate · signed by an allrounder
+## Stage 11 — Merge Gate · a human decides
 
 ```
 /gate-merge <feature-slug>
-/bypass-gate <feature-slug> script-audit
-/bypass-gate <feature-slug> merge
 ```
 
-**You get:** `docs/qa/<feature-slug>/audit/gate-merge.md` — includes the
-**hard testId-coverage check**. An allrounder signs the ledger + report,
-then the branch merges.
+**You get:** `docs/qa/<feature-slug>/audit/gate-merge.md` — a digest of facts. The
+stability-run table with every failure and its classification, the commit manifest
+every piece of evidence refers to, lint/typecheck/generation results, lifecycle
+integrity (`@manual` retained, generated set equals `@automated`), the coverage
+rungs, the observability-gap state, any advisory review findings, and a **Gaps and
+open items** section.
 
-A named allrounder may explicitly waive Script Audit and/or say
-`bypass Merge Gate`. These are separate decisions: the audit waiver satisfies
-only the exact audit prerequisite, while the gate waiver permits progression
-past the gate. Claude preserves the report's real readiness and allows PROBE to
-continue only after the branch is actually merged. Neither bypass merges the
-branch or bypasses repository permissions/branch protection.
+**To approve:** read the digest and say so. Claude appends the approval row with
+your name, role, and a `YYYY-MM-DD HH:MM` timestamp, and sets the Merge Gate stage
+to `done`.
 
-> **Example:** the demo's Merge Gate report was assembled **NOT READY** with four
-> named human-decision items — AIO ids still pending sync, Script Audit
-> independence to confirm, two unratified proposed waivers, and an unsigned
-> Exploratory Run risk acceptance. An honest NOT READY with named owners is the point;
-> the orchestrator never stamps a gate green to move things along.
+**The approval is not the merge.** The branch still goes through the repository's
+normal review, authorization, and branch protection — none of which PROBE performs
+or waives. `/testops-promote` requires both the recorded approval *and* an actual
+merge.
 
-## Stage 13 — TestOps Promotion · Automation Engineer / QA Lead
+> **Example:** the digest lists four open items — AIO ids still pending sync, no
+> advisory script review run this cycle, two manual-only cases without a
+> disposition, and an unrecorded Exploratory Run decision. The Automation Engineer
+> fixes the dispositions, records the exploratory decision, and approves with the
+> other two still listed. The row says what they reviewed; the items stay visible.
+
+## Stage 12 — TestOps Promotion · Automation Engineer / QA Lead
 
 ```
 /testops-promote <feature-slug>
@@ -562,42 +529,31 @@ branch or bypasses repository permissions/branch protection.
 > pipeline stages and records the runs as local-as-CI, explicitly marked
 > `TODO(env)` — never presented as real pipeline history.
 
-## Stage 14 — Ops Gate · signed by an allrounder
+## Stage 13 — Ops Gate · a human decides
 
 ```
 /gate-ops <feature-slug>
-/bypass-gate <feature-slug> ops
 ```
 
-**You get:** the Ops Gate evidence report — CI green ×5, flake rate < 2%, Allure
-history clean, AIO statuses synced, and an exact manual-only inventory of zero.
-Count effective tags, including Feature/Rule inheritance: `@manual` without
-`@automated` is manual-only. Signature makes the feature's automation **Done**.
+**You get:** the Ops Gate evidence digest — the last N CI runs with retries, the
+flake rate against its threshold, report-history cleanliness, external sync state,
+the four coverage rungs, and the manual-only inventory with each scenario's
+disposition. Counts use effective tags, including Feature/Rule inheritance:
+`@manual` without `@automated` is manual-only.
 
-A named allrounder may explicitly say `bypass Ops Gate`. Claude keeps all
-missing CI/flake/report evidence visible, records the waiver, and writes
-`Done — Ops Gate bypassed` rather than ordinary `Done`.
+**To approve:** read the digest and say so. Claude appends the approval row with
+your name, role, and timestamp, sets the Ops Gate stage to `done`, and records the
+feature's automation outcome as **Done**.
 
-Any exception must be a narrow human-signed waiver listing exact `TC-*` ids,
-rationale, owner, expiry/backfill date, and retained manual coverage. A generic
-percentage or open-ended waiver is not sufficient.
+Every expiry and backfill obligation attached to a manual-only disposition survives
+the approval and is carried into the outcome line — Done never silently absorbs an
+outstanding commitment. A scenario with no disposition at all is named in **Gaps**;
+a percentage is not a disposition.
 
-> **Example:** the demo's Ops Gate is **NOT READY pending first real CI history** —
-> the Ops Gate will not call automation Done on local-as-CI evidence. It
-> also has 19 manual-only scenarios and no lifecycle waiver. It becomes
-> signable only after the Jenkins pipeline runs the suite green ×5 and the
-> manual-only count reaches zero (or exact cases receive valid waivers).
-
-To bypass every formal gate explicitly:
-
-```text
-/bypass-gate <feature-slug> all
-```
-
-Claude expands this into separate Design, Merge, and Ops decisions and waiver
-rows. It never stores one vague wildcard waiver or calls the evidence passed.
-
----
+> **Example:** five green CI runs, flake rate 0.8%, one `@quarantine` scenario with
+> a `/flake-triage` exit plan, and three manual-permanent cases with owners. The QA
+> Lead approves; the ledger records automation Done with the three manual-permanent
+> cases and their owners still listed.
 
 ## Cross-track: flaky test?
 
@@ -656,9 +612,14 @@ cases a diff touches). Full guide with executable examples:
 
 1. **Design is gated before scripting** — a human who knows the domain signs
    what "correct" means before any automation exists.
-2. **Every reviewer is adversarial and read-only** — auditors can't "fix"
-   their way to agreement, so their findings mean something.
+2. **The reviewer is adversarial and read-only** — `/audit-scripts` can't "fix"
+   its way to agreement, so its findings mean something. It is advisory: a human
+   at the gate decides what each one is worth.
 3. **Manual execution is evidence, not a stopgap** — record it and a feature
    can ship on it while automation catches up.
 4. **Nothing is green by accident** — ×3 locally, ×5 in CI, no retries-as-
-   evidence, no silent waivers, and wrong wafer numbers halt everything.
+   evidence, and wrong wafer numbers are always a `blocker`.
+5. **A gate is a record, not a verdict** — the digest states the facts including
+   every gap, a named human decides, and the decision is stored with a timestamp.
+   Nothing is computed, nothing is waived, and nothing is hidden to make a
+   decision look cleaner.

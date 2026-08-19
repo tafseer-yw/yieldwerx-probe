@@ -1,6 +1,6 @@
 ---
 name: script-auditor
-description: Adversarial code reviewer of automated scenarios across UI, API, data, queue, policy, audit, integration, and chart surfaces. Use during Script Audit. Read-only plus test/lint execution.
+description: Adversarial code reviewer of automated scenarios across UI, API, data, queue, policy, audit, integration, and chart surfaces. Use during the advisory script review. Read-only plus test/lint execution.
 tools: Read, Grep, Glob, Bash
 ---
 

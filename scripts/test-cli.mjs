@@ -96,12 +96,13 @@ paths:
   const rejected = run(['validate-config', '--root', temporaryRoot, '--config', invalid]);
   if (rejected.status === 0) throw new Error('Invalid configuration was accepted.');
 
-  // --- Gate hibernation (P17) ----------------------------------------------
-  // These forms and safeguards are load-bearing: flow and block sequences plus
-  // flow and block authorizer mappings must be accepted; expiry must surface;
-  // and an anonymous hibernation must be rejected. Otherwise a valid governance
-  // decision either fails to load or silently behaves unlike its declaration.
-  const hibernationBase = `schemaVersion: 1
+  // A removed key must fail in a way that explains itself. A bare "unknown key"
+  // reads as a typo, and the natural response to a suspected typo is to put the
+  // key back — which is how a retired mechanism gets resurrected on upgrade.
+  const removedKey = path.join(temporaryRoot, 'removed-key.yaml');
+  fs.writeFileSync(
+    removedKey,
+    `schemaVersion: 1
 probeVersion: ${expectedVersion}
 paths:
   features: features
@@ -109,114 +110,52 @@ paths:
   artifacts: .probe/artifacts
 governance:
   gates:
-`;
-  const hibernated = path.join(temporaryRoot, 'hibernated.yaml');
-  fs.writeFileSync(
-    hibernated,
-    `${hibernationBase}    mode: hibernated
-    scope: [design, merge, ops]
-    authorizedBy:
-      name: Test Owner
-      email: owner@example.com
-      role: PROBE Owner
-    reason: Evaluation period.
-    since: 2026-08-10
-    until: null
+    mode: hibernated
 `,
   );
-  const accepted = run(['validate-config', '--root', temporaryRoot, '--config', hibernated]);
-  if (accepted.status !== 0) {
-    throw new Error(`Complete hibernation was rejected: ${accepted.stderr || accepted.stdout}`);
+  const removed = run(['validate-config', '--root', temporaryRoot, '--config', removedKey]);
+  if (removed.status === 0) throw new Error('A removed governance block was accepted.');
+  if (!removed.stderr.includes('was removed in 3.0')) {
+    throw new Error(`The removed-key error did not explain itself:\n${removed.stderr}`);
   }
 
-  const blockScope = path.join(temporaryRoot, 'hibernated-block-scope.yaml');
+  // Stacks: a valid list is accepted; an empty or duplicated one is rejected.
+  const stacksOk = path.join(temporaryRoot, 'stacks-ok.yaml');
   fs.writeFileSync(
-    blockScope,
-    `${hibernationBase}    mode: hibernated
-    scope:
-      - design
-      - merge
-    authorizedBy:
-      name: Test Owner
-      email: owner@example.com
-      role: PROBE Owner
-    reason: Evaluation period.
-    since: 2026-08-10
-    until: null
+    stacksOk,
+    `schemaVersion: 1
+probeVersion: ${expectedVersion}
+paths:
+  features: features
+  ledgers: docs/qa
+  artifacts: .probe/artifacts
+stacks: [node-ts-spa, dotnet-legacy]
 `,
   );
-  const blockScopeResult = run([
-    'validate-config',
-    '--root',
-    temporaryRoot,
-    '--config',
-    blockScope,
-  ]);
-  if (blockScopeResult.status !== 0) {
+  const stacksOkResult = run(['validate-config', '--root', temporaryRoot, '--config', stacksOk]);
+  if (stacksOkResult.status !== 0) {
     throw new Error(
-      `Block-sequence hibernation was rejected: ${blockScopeResult.stderr || blockScopeResult.stdout}`,
+      `A valid stacks list was rejected:\n${stacksOkResult.stderr || stacksOkResult.stdout}`,
     );
   }
 
-  const inlineAuthorizer = path.join(temporaryRoot, 'hibernated-inline-authorizer.yaml');
+  const stacksBad = path.join(temporaryRoot, 'stacks-bad.yaml');
   fs.writeFileSync(
-    inlineAuthorizer,
-    `${hibernationBase}    mode: hibernated
-    scope: [design, merge, ops]
-    authorizedBy: { name: Test Owner, email: owner@example.com, role: PROBE Owner }
-    reason: Evaluation period.
-    since: 2026-08-10
-    until: null
+    stacksBad,
+    `schemaVersion: 1
+probeVersion: ${expectedVersion}
+paths:
+  features: features
+  ledgers: docs/qa
+  artifacts: .probe/artifacts
+stacks: [node-ts-spa, node-ts-spa]
 `,
   );
-  const inlineAuthorizerResult = run([
-    'validate-config',
-    '--root',
-    temporaryRoot,
-    '--config',
-    inlineAuthorizer,
-  ]);
-  if (inlineAuthorizerResult.status !== 0) {
+  const stacksBadResult = run(['validate-config', '--root', temporaryRoot, '--config', stacksBad]);
+  if (stacksBadResult.status === 0 || !stacksBadResult.stderr.includes('more than once')) {
     throw new Error(
-      `Inline-authorizer hibernation was rejected: ${inlineAuthorizerResult.stderr || inlineAuthorizerResult.stdout}`,
+      `A duplicated stacks list was not rejected clearly:\n${stacksBadResult.stderr || stacksBadResult.stdout}`,
     );
-  }
-
-  const expired = path.join(temporaryRoot, 'hibernated-expired.yaml');
-  fs.writeFileSync(
-    expired,
-    `${hibernationBase}    mode: hibernated
-    scope: [design]
-    authorizedBy: { name: Test Owner, email: owner@example.com, role: PROBE Owner }
-    reason: Expiry test.
-    since: 1999-01-01
-    until: 2000-01-01
-`,
-  );
-  const expiredResult = run(['validate-config', '--root', temporaryRoot, '--config', expired]);
-  if (expiredResult.status !== 0 || !expiredResult.stdout.includes('expired on 2000-01-01')) {
-    throw new Error(
-      `Expired hibernation was not surfaced: ${expiredResult.stderr || expiredResult.stdout}`,
-    );
-  }
-
-  const anonymous = path.join(temporaryRoot, 'anonymous.yaml');
-  fs.writeFileSync(anonymous, `${hibernationBase}    mode: hibernated\n`);
-  const anonymousResult = run([
-    'validate-config',
-    '--root',
-    temporaryRoot,
-    '--config',
-    anonymous,
-    '--json',
-  ]);
-  if (anonymousResult.status === 0) {
-    throw new Error('Hibernation with no named authorizer was accepted.');
-  }
-  for (const required of ['authorizedBy.name', 'reason', 'since', 'scope']) {
-    if (!anonymousResult.stdout.includes(required)) {
-      throw new Error(`Anonymous hibernation did not report the missing '${required}'.`);
-    }
   }
 
   fs.mkdirSync(path.join(temporaryRoot, 'docs', 'PRDs'), { recursive: true });

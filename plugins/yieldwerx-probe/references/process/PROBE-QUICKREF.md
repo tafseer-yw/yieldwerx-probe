@@ -14,56 +14,50 @@ Building the application under test: [DEV-TRACK.md](DEV-TRACK.md).
                                                      to /probe-spec to chain it)
  4. /forge-cases <feature-slug> [selector]→ plain-language procedural Gherkin per category
                                             (permanent @manual), + pacing/candidacy plan
-                                            + visual candidate or specific N/A per category
- 5. /audit-cases <feature-slug> [selector]→ adversarial review (default)
-                                            or named allrounder explicitly records
-                                            a Case Audit bypass + residual risk
- 6. /gate-design <feature-slug>           → evidence report
-    ✍  Domain Test Analyst signs manually, or a named allrounder says "approved"
-       and Claude records the decision, date, @auto:now set, status, and waiver
-       A bare "approved" never silently bypasses Case Audit
-       A named allrounder may explicitly say "bypass Design Gate" even when
-       NOT READY; Claude records the real gaps and gate waiver
- 7. /sync-cases <feature-slug> [--live]   → push approved scenarios to Jira AIO Tests as BDD
+                                            + visual disposition AND API disposition
+                                              per category
+ 5. /gate-design <feature-slug>           → evidence digest: counts, coverage, lint,
+                                            and every gap. No verdict.
+    ✍  A named human says "I have reviewed the cases and I approve them"
+       → recorded with a timestamp; Case Sync and Script Forge unlock
+       "continue" / "go ahead" is not an approval — ask which is meant
+ 6. /sync-cases <feature-slug> [--live]   → push approved scenarios to Jira AIO Tests as BDD
                                             cases; stable AIO keys written back (dry-run default)
- 8. /ui-recon <feature-slug> [env]        → locators + optional API/execution tandem
+ 7. /ui-recon <feature-slug> [env]        → locators + optional API/execution tandem
       [--with-api-recon --spec <openapi>]
       [--with-case-execution --tc <ids> --role <role>]
     /execute-cases <feature-slug> [env]   → one MCP browser batch, isolated
                                             cases, step results + failure evidence
     /log-exploratory <feature-slug>       → exploratory sessions + manual runs
-                                            of Design-Gate-authorized cases
-                                            (or signed risk acceptance)
- 9. /forge-scripts <feature-slug> [selector]→ add @automated when runnable; retain @manual
+                                            of Design-Gate-approved cases
+ 8. /forge-scripts <feature-slug> [selector]→ add @automated when runnable; retain @manual
                                             and @visual; use the profile's named baseline,
                                             masks, deterministic runner, and comparison evidence
-                                            (refuses without recorded Design Gate approval
-                                             or exact allrounder gate bypass)
-10. /audit-scripts <feature-slug> [selector]→ adversarial code review (rework Script Forge if FAIL)
-11. /green-run <feature-slug> [selector]  → green ×3 consecutive, every run logged
-12. /gate-merge <feature-slug>            → evidence report incl. testId coverage
-    ✍  Any allrounder signs or explicitly bypasses Merge Gate
+                                            (refuses without a recorded human
+                                             Design Gate approval)
+    /audit-scripts <feature-slug> [selector]→ ADVISORY independent code review, any time,
+                                            optional; never a gate, blocks nothing
+ 9. /green-run <feature-slug> [selector]  → green ×3 consecutive, every run logged
+10. /gate-merge <feature-slug>            → evidence digest incl. run history, lint,
+                                            observability gaps, advisory findings
+    ✍  A named human approves → recorded with a timestamp
        (the branch still uses normal merge authorization/protection)
-13. /testops-promote <feature-slug>       → one CI run, fail-on-flake, Allure + durable PROBE evidence
-14. /gate-ops <feature-slug>              → CI green ×5, flake <2%, AIO synced,
-                                            exact manual-only count = 0
-    ✍  Any allrounder signs Ops Gate → automation DONE
-       or explicitly bypasses it → DONE — OPS GATE BYPASSED
+11. /testops-promote <feature-slug>       → one CI run, fail-on-flake, Allure + durable PROBE evidence
+12. /gate-ops <feature-slug>              → evidence digest: CI green ×N, flake rate,
+                                            report history, AIO sync, manual-only inventory
+    ✍  A named human approves → automation DONE
 ```
 
-Any named QA Lead or Automation Engineer may run `/bypass-gate` for
-`case-audit`, `script-audit`, `audits`, `design`, `merge`, `ops`, or `all`.
-`audits` expands to separate Case and Script Audit waivers; `all` expands only
-to the three feature-wide gate waivers. Category scope is supported for audits
-and Design Gate. `bypass everything` is rejected as ambiguous. The evidence
-remains READY, NOT READY, FAIL, or not assembled; a bypass is never shown as
-approved or passed.
+**Every gate is the same four steps:** assemble a digest of facts → present it →
+record the human's decision with a timestamp → unlock the next stage. No
+`READY`/`NOT READY`, no blocking checklist, no waiver, no bypass — a gate that has
+not been approved is simply not approved. Approving with the listed gaps visible is
+a legitimate recorded decision; removing a gap from the digest is falsified
+evidence. Any role may approve any gate. Authority:
+[human-gates.md](../governance/human-gates.md).
 
-PROBE Owner Tafseer Haider (`tafseer.haider@yieldwerx.com`) may waive any exact
-PROBE item with `/owner-bypass`. The PIN and generated signing key stay in the
-user's environment or gitignored `.env`; the PIN is entered only through the
-hidden local CLI prompt. Claude sees only a short-lived, signed,
-scope-specific receipt.
+**Claude never writes an approval a human did not state.** It may transcribe one
+they did.
 
 Spec Probe starts every active AC with `**Summary:** Verify that ...`. Both
 Workflow and Simple Rule ACs use `Given/When/Then`. Workflow covers actions and
@@ -158,91 +152,56 @@ Three rules keep the tracks from corrupting each other:
 | Feature status (glance view)                    | `docs/qa/<feature>/LEDGER.md`                      |
 | Working/run artifacts (gitignored; CI-archived) | `.probe/artifacts/<feature>/<NN-stage>/`           |
 | Development-track artifacts                     | `.probe/artifacts/<feature>/70-build/`             |
-| Signed gate reports (committed)                 | `docs/qa/<feature>/audit/gate-*.md`                |
+| Gate reports (committed)                        | `docs/qa/<feature>/audit/gate-*.md`                |
 | Conventions                                     | `CLAUDE.md` · locator policy, chart contract, tags |
 
 ## Severity ladder
 
 |                |                                                                                                                               |
 | -------------- | ----------------------------------------------------------------------------------------------------------------------------- |
-| `blocker`      | wrong data on a chart/DB/export · self-passing test · falsified evidence — halts unless exactly waived by an authorized human |
-| `high`         | raw CSS/XPath · hard wait · missing render sync · single-layer P1 · traceability break — gate NOT READY                       |
-| `medium`       | convention drift — signer judges                                                                                              |
-| `low` / `info` | style · observations                                                                                                          |
+| `blocker`      | wrong data on a chart/DB/export · self-passing test · falsified evidence — fix it, or it goes in the gate digest's Gaps section |
+| `high`         | raw CSS/XPath · hard wait · missing render sync · single-layer critical scenario · traceability break — fix or record in Gaps   |
+| `medium`       | convention drift — recorded; worth fixing while the code is warm                                                               |
+| `low` / `info` | style · observations                                                                                                           |
+
+Severity is vocabulary, not control flow. Nothing halts automatically; a human
+reading the digest decides what each finding is worth.
 
 ## Typical sessions by role
 
-**QA Lead (allrounder)** — kicks off features (`/probe-spec`), signs or
-explicitly bypasses any gate,
-arbitrates waiver decisions, owns the flake log. For a ready Design Gate, the
-QA Lead may say `approved` and let Claude record the decision and date. Typical
-day: review a gate report, approve or bounce it with the checklist line that failed, run
-`/flake-triage` on last night's CI, decide one quarantine exit.
+**QA Lead** — kicks off features (`/probe-spec`), approves gates, owns the flake
+log. Typical day: read a gate digest, approve it or send it back naming the gap
+that mattered, run `/flake-triage` on last night's CI, decide one quarantine exit.
 
-Any named QA Lead or Automation Engineer may explicitly bypass Case Audit or
-any Design/Merge/Ops Gate for an exact feature/category and accept its recorded
-residual risk. Tafseer Haider is also the PROBE Owner and may use a
-PIN-authorized `/owner-bypass` receipt for any other exact PROBE item.
+**Automation Engineer** — drives the scripting track:
+`/forge-scripts` → `/green-run` → `/gate-merge`, running `/audit-scripts` when a
+fresh reading would help and fixing what it finds. Approves gates.
 
-**Automation Engineer (allrounder)** — drives the scripting track:
-`/forge-scripts` → `/audit-scripts` → `/green-run` → `/gate-merge`, fixing
-rework findings between runs. Signs any gate; records a waiver when signing
-what would normally be the Domain Test Analyst's line.
+**Domain Test Analyst** — owns test design quality: reviews `spec-analysis.md`
+ambiguities, refines `/forge-cases` output with domain knowledge (bin semantics,
+cluster/ink rules, notch conventions), and is usually the one who reads and
+approves the **Design Gate** digest. Growth path into scripting: starts by fixing
+`low`/`medium` script-review findings on a branch, graduating to `/forge-scripts`.
 
-**Domain Test Analyst** — owns test design quality: reviews
-`spec-analysis.md` ambiguities, refines `/forge-cases` output with domain
-knowledge (bin semantics, cluster/ink rules, notch conventions), **signs the
-Design Gate**. Growth path into scripting: starts by fixing `low/medium`
-script-audit findings on a branch, graduating to `/forge-scripts` under Merge Gate
-review.
+**Manual QA Engineer** — drives `/forge-cases` case drafting with the designer
+agent, then owns human execution: runs the Design-Gate-approved cases by hand,
+records per-case results and exploratory sessions via `/log-exploratory`, files
+`/bug-report` for every defect found. Their manual evidence is what lets a feature
+ship before automation lands. Growth path: toward Domain Test Analyst (deeper
+domain review) or Automation Engineer (scripting).
 
-**Manual QA Engineer** — drives `/forge-cases` case drafting with the
-designer agent, then owns human execution: runs the Design-Gate-authorized
-cases by hand, records per-case results and exploratory sessions via
-`/log-exploratory`, files `/bug-report` for every defect found. Their manual
-evidence is what lets a feature ship before automation lands. Growth path:
-toward Domain Test Analyst (deeper domain review) or Automation Engineer
-(scripting under review).
-
-## Gate hibernation (evaluation mode)
-
-A repository may suspend the three gates by declaring `governance.gates` in
-`probe.config.yaml`. **Hibernation suspends blocking and nothing else.**
-
-```text
-gate still runs · evidence still assembled · verdict still honest
-decision line   → HIBERNATED — evidence assembled, not signed
-NOT suspended   → severity ladder (blocker still halts) · Case/Script Audit
-                  verdicts · traceability · external-write approval ·
-                  the repo's own branch protection
-never           → approved / passed / signed  (that is falsified evidence)
-```
-
-`/forge-scripts` and `/testops-promote` accept the hibernation record instead of
-the approval they normally demand, and record the gate's real readiness verdict
-when they do. Every stage that proceeds writes a ledger row; when gates resume,
-those rows **are** the gate-debt list — each is then signed, bypassed, or fixed.
-A gate that said `NOT READY` under hibernation does not become `READY` because
-time passed. Resume by setting `mode: active` or deleting the block.
-
-Authority: [gate-hibernation.md](../governance/gate-hibernation.md) · policy P17.
-
-An allrounder may separately say `bypass Case Audit`, `bypass Script Audit`, or
-`bypass all audits`. `/bypass-gate` records one waiver per audit with the real
-verdict/findings and residual risk intact. Script Audit bypass is bound to the
-exact TC inventory and commit/file-hash manifest; any script change invalidates
-it. Audit bypass never implies Design/Merge/Ops bypass, and `bypass all gates`
-never implies audit bypass.
+Any role may approve any gate. There is no signer hierarchy and no waiver, because
+there is nothing to waive.
 
 ## The three iron rules
 
-1. **No scripting before human Design Gate approval or exact allrounder Design
-   Gate bypass is recorded** — `/forge-scripts` will refuse.
-2. **Humans decide gates and waivers.** Claude may transcribe a named
-   allrounder's direct Design Gate approval, explicit Case Audit bypass, or
-   explicit Design/Merge/Ops Gate bypass.
-   PROBE Owner overrides require a valid local PIN-authorized receipt. Claude
-   never decides approval or invents a bypass.
+1. **No scripting before a recorded human Design Gate approval** —
+   `/forge-scripts` will refuse. This is the only place PROBE blocks, and it blocks
+   on exactly one thing: whether a human has looked at the design.
+2. **Humans decide gates.** Claude assembles the facts and may transcribe a
+   decision a human stated. It never writes an approval nobody stated — not from a
+   clean digest, not from an approval of a different scope, and not because every
+   check passed.
 3. **Wrong wafer data is always `blocker`** — chart vs oracle vs DB must
    agree; three layers on every critical scenario (chart + oracle offline;
    the DB layer joins in live mode).
@@ -250,6 +209,8 @@ never implies audit bypass.
 Lifecycle rule: every designed scenario permanently keeps `@manual`; Script
 Forge adds `@automated` only when runnable, and `bddgen` selects that tag.
 Manual-only means effective tags include `@manual` but not `@automated`,
-including inherited Feature/Rule tags. Ops Gate requires exactly zero such
-scenarios. Any exception must name exact `TC-*` ids, rationale, owner,
-expiry/backfill date, and a human signature; percentages are not waivers.
+including inherited Feature/Rule tags. Every manual-only scenario carries a
+disposition — `manual-permanent`, `deferred-until:<condition/date>`, or `retired` —
+with an exact `TC-*` id, rationale, owner, and any expiry or backfill date. The Ops
+Gate digest lists the inventory and names every scenario that has none; a
+percentage is not a disposition.

@@ -1,7 +1,7 @@
 ---
 name: forge-scripts
 user-invocable: true
-description: Use when the Design Gate has a recorded human approval or explicit allrounder bypass and the authorized cases must become automated scenarios — feature files, steps, page/component objects, API/DB/oracle assertions, tagged and traced to AIO ids. PROBE Script Forge stage.
+description: Use when the Design Gate has a recorded human approval and the approved cases must become automated scenarios — feature files, steps, page/component objects, API/DB/oracle assertions, tagged and traced to external case ids. PROBE Script Forge stage.
 track: scripting
 safety: writes-local
 produces: feature branch e2e/<feature-slug> with implemented steps, page objects, and @automated added to runnable scenarios while @manual remains; .probe/artifacts/<feature>/60-scripts/forge-notes.md
@@ -29,9 +29,8 @@ independent assertions, then add `@automated` while retaining `@manual`.
 
 ## When
 
-Run only after the Design Gate has a recorded human approval or explicit
-allrounder gate bypass, and only for its confirmed or bypass-recorded
-automation-candidacy scope.
+Run only after the Design Gate has a recorded human approval, and only for its
+confirmed automation-candidacy scope.
 
 ## Where
 
@@ -47,43 +46,34 @@ commands, and refuse to re-author approved procedural steps.
 Automate only the human-authorized cases. This is where the Design Gate
 decision becomes enforceable.
 
-## Preconditions — REFUSE (do not negotiate) if any fails
+## Preconditions
 
-**Gate hibernation is checked first.** Read `governance.gates` in
-`probe.config.yaml`; authority is
-`${CLAUDE_PLUGIN_ROOT}/references/governance/gate-hibernation.md`. When
-`mode: hibernated` covers `design` and `until` has not passed, precondition 1 is
-**satisfied by the hibernation record** in place of an approval — scripting is
-not blocked during an evaluation period. Record in `forge-notes.md` and the
-ledger: that the Design Gate was hibernated, the authorizer, and **the gate's
-real readiness verdict at the time**. Preconditions 2, 3 and 4 still apply
-unchanged, and the automation set becomes the confirmed `@auto:now` list where
-one exists, or the explicitly requested selector otherwise. Hibernation never
-promotes `@auto:next|later`, and never invents an automation set from nothing —
-an empty selection still fails closed.
+1. **The Design Gate has a recorded human approval covering this scope.** Read the
+   ledger's **Gate approvals** table: a Design Gate row naming a human, with a
+   role and a `YYYY-MM-DD HH:MM` timestamp, scoped to the feature or to the
+   `CAT-NN` being scripted. That is the whole check — no audit verdict, no hash
+   comparison, no waiver lookup. Authority:
+   `${CLAUDE_PLUGIN_ROOT}/references/governance/human-gates.md`.
 
-1. Ledger check: **the Design Gate has a recorded human approval or explicit
-   allrounder Design Gate bypass**. Accept
-   either a manually signed approval or an allrounder-only Claude transcription
-   that names a QA Lead/Automation Engineer, says `Decision: approved`, has a
-   date, confirms `@auto:now`, and includes the solo-allrounder waiver. Claude
-   transcription for any other role is invalid. Also accept
-   `waived — allrounder gate bypass` only when the gate report names the human
-   allrounder, exact scope, date, reason, known gap/residual risk, and current
-   `@auto:now` set or an explicit requested selector. If neither decision is
-   present:
+   Without it:
+
    > "Scripting is blocked until the Design Gate has a recorded human approval
-   > or explicit allrounder gate bypass (PROBE rule 4)."
-2. Case Audit verdict is PASS, or the exact audit scope has its own recorded
-   allrounder Case Audit bypass whose recorded case/spec hashes still match
-   when available. A material input change makes that waiver stale. A Design
-   Gate bypass does not silently waive Case Audit.
-3. For UI scenarios, if UI Recon ran its locator inventory is present; if it
-   was skipped, the ledger says so. Non-UI scenarios require their applicable
-   API/event/DB/audit observability contract instead.
-4. If the selected scope contains `@testtype:performance`, route those TCs to
-   `/forge-performance-tests`; ordinary Script Forge must not create Playwright
-   steps or repeated request loops for them.
+   > (PROBE policy P4). Run `/gate-design <feature>` to assemble the evidence
+   > digest for review."
+
+   The automation set is the approved `@auto:now` list. Where the approval named a
+   narrower set, use that. An empty selection fails closed — never invent an
+   automation set.
+
+2. **Performance scope routes elsewhere.** If the selected scope contains
+   `@testtype:performance`, route those TCs to `/forge-performance-tests`;
+   ordinary Script Forge must not create Playwright steps or repeated request
+   loops for them.
+
+Observability contracts are inputs, not gates. For UI scenarios, use the UI Recon
+locator inventory when it exists and record in `forge-notes.md` when it does not.
+Non-UI scenarios use their applicable API, event, DB, or audit contract on the same
+terms.
 
 ## Procedure
 
@@ -170,20 +160,19 @@ human decision first through the ledger/amendment path.
    after, unresolved dispositions, and the next planned cycle. Successive cycles
    must reduce unresolved inventory; a scoped cycle never claims feature-level
    scripting completion merely because its subset is green. Approved
-   manual-permanent/deferred/retired/
-   waived cases are not accidental backlog.
+   manual-permanent, deferred, and retired cases are not accidental backlog.
 
 ## Boundaries
 
 - **Implement, don't author.** Every scenario already exists as approved,
-  audited, gate-approved Gherkin. Script Forge writes step definitions + page objects
+  gate-approved Gherkin. Script Forge writes step definitions + page objects
   behind it. A scenario that exists in no approved `.feature` file must not
   appear — new behavior goes back to Case Forge, not invented here.
 - **Never delete a designed case or change scenario wording, order, existing
   tags, or expected behavior to fit the code.** The only permitted scenario-tag
   mutation is adding `@automated` when its implementation is runnable;
   permanent `@manual` remains. A code/scenario mismatch is a design defect —
-  hand it back to Case Forge/Case Audit.
+  hand it back to Case Forge.
 - Preserve each original Jira AIO manual test record, its manual status, and
   stable id. Automation is an additive scenario/result link on that record;
   adding `@automated` never authorizes deleting, replacing, or duplicating it.

@@ -1,13 +1,13 @@
 ---
 name: gate-ops
 user-invocable: true
-description: Use when TestOps Promotion evidence must be assembled for the Ops Gate, or when a named QA Lead or Automation Engineer explicitly bypasses the Ops Gate. Checks CI green ×N, report history, flake rate, AIO synchronization, and durable evidence; preserves NOT READY findings and records bypassed automation as Done with visible residual risk.
+description: Use when TestOps Promotion is done and the Ops Gate needs its evidence digest assembled, or when a human states they have reviewed the operational evidence and approve it. Assembles facts — CI run history, flake rate, report history, external sync state, coverage rungs, and the manual-only inventory — with no computed verdict, then records the human's decision with a timestamp. A recorded approval is what marks the feature's automation Done. PROBE Ops Gate.
 track: ops
 safety: writes-shared
 produces: docs/qa/<feature>/audit/gate-ops.md (committed), docs/qa/<feature>/coverage.{md,json} (refreshed via the configured requirementsCoverage command)
-consumes: features/<feature>/*.feature, 60-scripts/forge-notes.md, 90-testops/testops.md, CI run history, Allure history, AIO Tests statuses, LEDGER.md
-chains: /testops-promote, /bypass-gate
-argument-hint: <feature-slug> [N-runs] [bypass Ops Gate]
+consumes: features/<feature>/*.feature, 60-scripts/forge-notes.md, 90-testops/testops.md, CI run history, report history, external case-management statuses, LEDGER.md
+chains: /testops-promote, /flake-triage
+argument-hint: <feature-slug> [N-runs]
 ---
 
 > **Consumer contract:** Before using paths, commands, integrations, or
@@ -16,154 +16,124 @@ argument-hint: <feature-slug> [N-runs] [bypass Ops Gate]
 > locations and commands from `probe.config.yaml`; use documented defaults
 > only when the file is absent.
 
-# Ops Gate (orchestrator)
+# Ops Gate
 
 ## Why
 
-Require durable operational proof that merged automation is stable, visible,
-and maintainable before declaring it complete.
+Give a human the automation's operational record — how it has actually behaved in
+CI over time — before the feature's automation is called Done, and record what
+they decided.
 
 ## What
 
-Assemble CI history, reporting, flake rate, evidence retention, required
-external synchronization, and manual-only inventory into the final gate report.
+An evidence digest of facts from CI history, flake measurement, report history,
+external synchronisation, coverage, and the manual-only inventory, followed by the
+human's recorded approval.
 
 ## When
 
 Run after TestOps Promotion has executed in the real configured CI environment
-for the required number of qualifying runs.
+for the required number of qualifying runs, and again when a human states they
+approve.
 
 ## Where
 
-Read pipeline/report history and consumer PROBE evidence; write the committed
-Ops Gate report and update the feature ledger only after human review.
+Read pipeline and report history plus consumer PROBE evidence; write the committed
+Ops Gate report and update the feature ledger.
 
 ## How
 
-Verify green-run count and provenance, calculate flake and coverage measures,
-check durable artifacts and exact exceptions, leave signature fields empty,
-and block normal completion unless a human signs or a named allrounder
-explicitly bypasses the gate through `/bypass-gate`.
+Count the green runs and their provenance, measure flake against actual
+executions, check durable evidence and external sync, list every gap plainly,
+present the digest, and stop. On an explicit human approval, write the approval
+row with a timestamp and record the automation as Done.
 
-The last gate: proves the automation survives contact with CI over time. A
-signed Ops Gate means the feature's automation is **Done** in the ledger.
-Claude never invents a signature. It may transcribe a named allrounder's
-explicit Ops Gate bypass and mark
-`Done — Ops Gate bypassed` with the residual risk still visible.
-
-## Gate hibernation (evaluation mode)
-
-**Check `governance.gates` in `probe.config.yaml` before anything else.**
-Authority: `${CLAUDE_PLUGIN_ROOT}/references/governance/gate-hibernation.md`.
-
-When `mode: hibernated` and `ops` is in `scope`, and `until` is absent, `null`,
-or a date that has not passed:
-
-1. Assemble every piece of evidence as normal — the CI green run count, the
-   flake rate, AIO synchronization, durable evidence, **and the exact manual-only
-   scenario count.** Hibernation suspends blocking, never gathering.
-2. Report the real readiness verdict with every failing item intact.
-3. Set the decision line to `HIBERNATED — evidence assembled, not signed` and
-   the automation outcome to **`Done — Ops Gate hibernated`**, never plain
-   `Done`, so no feature is ever recorded as having completed a gate it did not.
-4. Add the hibernation header: mode, authorizer name, email and role, reason,
-   `since`, and `until` or `reviewOn`.
-5. Record the ledger row with `Decision: hibernated`, the authorizer, and the
-   real readiness verdict — including the manual-only count, which is the
-   obligation most likely to be outstanding when gates resume.
-6. Do not request a signature and do not leave signature fields implying one is
-   owed.
-
-An expired `until` means gates are active; report the expiry and follow the
-normal signing path.
-
-Every expiry and backfill obligation on a manual-only waiver survives
-hibernation unchanged. Hibernation suspends the gate, not the debt it was
-measuring.
-
-## Allrounder Ops Gate bypass
-
-A named QA Lead or Automation Engineer may say `bypass Ops Gate` even when the
-report is `NOT READY`.
-
-- Keep the evidence verdict and every failed/missing item unchanged.
-- Record `Decision: bypassed` and
-  `Status: waived — allrounder gate bypass` through `/bypass-gate`.
-- Set the automation outcome to `Done — Ops Gate bypassed`, not ordinary
-  `Done`, and retain every expiry/backfill obligation.
-- A bare `approved`, `continue`, or `go ahead` is not a bypass.
-
-## Halt rules
-
-- Feature scenario failing in the latest CI run → `blocker`; normal approval
-  halts, while an explicit allrounder bypass keeps the failure visible.
-- Any `@automated` scenario whose effective tags do not also include permanent
-  `@manual` → `blocker`, halt immediately.
-- Any manual-only case without an approved terminal disposition → `blocker`,
-  halt immediately. Generic percentage/count dispositions are invalid.
-- Flake rate above threshold or unsynced AIO statuses → `high`, stop after
-  assembling; stamp `NOT READY`.
+**Authority:** `${CLAUDE_PLUGIN_ROOT}/references/governance/human-gates.md`. A
+gate is a record of a human decision. This skill computes no verdict and blocks
+on nothing.
 
 ## Procedure
 
-1. Ledger check: TestOps Promotion `done`. Default evidence window: **N = 5**
-   consecutive pipeline runs (or the number passed in).
-2. Compute the lifecycle inventory from parsed Gherkin effective tags,
-   including tags inherited from `Feature` or `Rule`:
-   - **designed** = scenarios whose effective tags include `@manual`;
-   - **automated** = designed scenarios whose effective tags also include
-     `@automated`;
-   - **manual-only count** = designed scenarios whose effective tags include
-     `@manual` but not `@automated`.
-     The required default is **unresolved disposition count = 0**. Each manual-
-     only case must be `manual-permanent`, `deferred-until:<condition/date>`,
-     `retired`, or `waived`, with exact TC id, rationale, owner, applicable
-     expiry/backfill condition, and human approval. Also fail lifecycle integrity
-     if any `@automated` scenario lacks permanent `@manual`.
-3. Collect evidence:
-   - CI: last N runs containing the feature's scenarios — all green for those
-     scenarios? Any retries recorded? (A pass-on-retry counts as a flake.)
-   - **Flake rate**: flaky occurrences / actual scenario executions; record
-     skipped, cancelled, not-selected, and infrastructure-aborted runs separately.
-     Use the configured threshold (default **< 2%**) and require a configured
-     minimum execution count per scenario (default N). Zero `@quarantine` entries without a
-     documented /flake-triage exit plan.
-   - Allure: history/trend clean for the feature's scenarios on the same test
-     version/commit (no unexplained
-     duration cliffs or status churn).
-   - AIO Tests: for AIO-eligible scenarios, every original manual test record still exists with its stable
-     id and manual status, and links to the latest automated scenario/result
-     (synced or a documented sync job). No replacement or duplicate automated
-     record stands in for it. API/contract/performance scenarios and results are
-     repository-only and have no AIO write requirement.
-   - CI integrity: the selected BDD slice ran once with framework self-tests,
-     unexpected flakes failed, and reports plus `.probe/artifacts/**` were
-     archived before cleanup. Visual/all evidence uses reviewed committed
-     container baselines when in scope.
-   - Apply the configured evidence policy when Jenkins/Allure is unavailable.
-     By default local-as-CI is diagnostic only: mark `TODO(env)` and `NOT READY`.
-4. Regenerate the requirements-coverage report against the latest CI results:
-   the configured `requirementsCoverage` command (joining the configured
-   execution and report evidence). At the Ops Gate
-   the **execution** and **passing** rungs must be 100% for the automated set —
-   every automated AC ran and is green; a `❌ failing` AC in the matrix is a
-   `blocker`. Attach `coverage.md` as durable evidence and record the four rung %s.
-5. Write `docs/qa/<feature>/audit/gate-ops.md`: evidence table (run ids,
-   dates, results), designed/automated/manual-only inventory with exact TC ids,
-   approved disposition details, flake numerator/actual-execution denominator,
-   checklist (CI green ×N · unresolved dispositions zero · permanent `@manual`
-   retained · generated set equals `@automated` · **requirements coverage:
-   execution & passing 100% for the automated set, no failing AC** · flake <
-   threshold · quarantine clean · Allure history clean · original AIO manual
-   records retained and linked to automated results), readiness stamp,
-   EMPTY gate signature block.
-6. Ledger: Ops Gate `in-progress — awaiting signature`. On human signature the
-   signer sets Ops Gate `done`. If a named allrounder directly says to bypass
-   the gate, apply `/bypass-gate`, set the gate stage to
-   `waived — allrounder gate bypass`, and set the automation outcome to
-   `Done — Ops Gate bypassed`, subject to every recorded residual risk and
-   expiry/backfill obligation.
+1. Read the ledger and `90-testops/testops.md`. Mark Ops Gate `in-progress`.
+   Default evidence window: **N = 5** consecutive pipeline runs, or the number
+   passed in.
 
-AIO synchronization health is reported separately from product automation
-quality: it may keep the operational gate `NOT READY`, but must not be
-misclassified as a product/test correctness failure.
+2. Compute the lifecycle inventory from parsed Gherkin effective tags, including
+   tags inherited from `Feature` or `Rule`:
+
+   - **designed** — scenarios whose effective tags include `@manual`;
+   - **automated** — designed scenarios whose effective tags also include
+     `@automated`;
+   - **manual-only** — designed scenarios with `@manual` and not `@automated`,
+     listed by exact TC id with each one's disposition
+     (`manual-permanent`, `deferred-until:<condition/date>`, `retired`, or none);
+   - any `@automated` scenario that has lost permanent `@manual`.
+
+3. Collect the operational facts:
+
+   - **CI** — the last N runs containing this feature's scenarios, each run's
+     result, and every retry recorded (a pass-on-retry is a flake);
+   - **Flake rate** — flaky occurrences over actual scenario executions, with
+     skipped, cancelled, not-selected, and infrastructure-aborted runs counted
+     separately. Report the number against the configured threshold (default
+     **< 2%**) and the configured minimum execution count per scenario; report
+     the number, do not convert it into a verdict. List every `@quarantine` entry
+     and whether it has a `/flake-triage` exit plan;
+   - **Report history** — trend cleanliness for this feature's scenarios on the
+     same test version and commit, and any unexplained duration cliff or status
+     churn;
+   - **External case management** — for eligible scenarios, whether each original
+     manual record still exists with its stable id and manual status, and whether
+     it links to the latest automated scenario and result. API, contract, and
+     performance scenarios are recorded `AIO: n/a — repository-only`;
+   - **CI integrity** — whether the selected slice ran once with framework
+     self-tests, whether unexpected flakes failed the run, and whether reports and
+     `.probe/artifacts/**` were archived before cleanup. Visual evidence uses
+     reviewed committed container baselines when in scope;
+   - when the configured pipeline or report provider is unreachable, say so and
+     mark the affected facts `TODO(env)`. Local-as-CI evidence is labelled
+     diagnostic, never presented as pipeline evidence.
+
+4. Refresh the requirements-coverage report with the configured
+   `requirementsCoverage` command, joining the configured execution and report
+   evidence. Record all four rungs and name every AC in the automated set that
+   did not run or is failing. Attach `coverage.md` as durable evidence.
+
+5. Write `docs/qa/<feature>/audit/gate-ops.md`:
+
+   - **Evidence table** — run ids, dates, results, retries.
+   - **Lifecycle inventory** — designed / automated / manual-only with exact TC
+     ids and each disposition.
+   - **Flake** — numerator, actual-execution denominator, rate, threshold,
+     quarantine list.
+   - **Coverage** — the four rung percentages and the attached matrix.
+   - **Gaps and open items** — a failing scenario in the latest run, an
+     `@automated` scenario missing permanent `@manual`, a manual-only case with no
+     disposition, a flake rate over threshold, an unexplained report trend, an
+     unsynced external status, a missing archive, and any `TODO(env)` all belong
+     here. Never soften or omit one.
+   - **Approval** — an empty block matching the ledger's Gate approvals columns.
+
+   No readiness stamp, no ✅/❌ checklist.
+
+6. Update the ledger: Ops Gate `in-progress`, link the report. Present the digest
+   and stop; do not recommend a decision.
+
+7. When a human states their decision, append one row to the ledger's **Gate
+   approvals** table — gate, scope, name, role, `YYYY-MM-DD HH:MM` local time,
+   what they said they reviewed, and a link to this report — add
+   `Recorded by: Claude — transcribed from the human's direct approval`, fill the
+   same block in the report, set the Ops Gate stage to `done`, and record the
+   feature's automation outcome as **Done**.
+
+   Every expiry and backfill obligation attached to a manual-only disposition
+   survives the approval. Carry them into the report's outcome line so Done never
+   silently absorbs an outstanding commitment.
+
+## Hard rules
+
+- **Claude never writes an approval the human did not state.** Without one there
+  is no row and the automation is not Done.
+- External-sync health is reported separately from product and test correctness.
+  A sync problem is a sync problem; it is never presented as a test failure, and a
+  test failure is never softened into a sync note.

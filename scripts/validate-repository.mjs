@@ -7,15 +7,20 @@ const pluginRoot = path.join(root, 'plugins', 'yieldwerx-probe');
 const expectedSkills = [
   'api-recon',
   'ask-yieldwerx',
-  'audit-cases',
   'audit-scripts',
-  'bypass-gate',
   'bug-report',
   'change-impact',
+  'desktop-recon',
   'execute-cases',
   'flake-triage',
   'forge-api-tests',
   'forge-performance-tests',
+  'forge-prd',
+  'forge-desktop-scripts',
+  'forge-security-tests',
+  'forge-tech-design',
+  'forge-unit-tests',
+  'forge-migration',
   'forge-cases',
   'forge-oracle',
   'forge-scripts',
@@ -24,10 +29,11 @@ const expectedSkills = [
   'gate-ops',
   'green-run',
   'log-exploratory',
-  'owner-bypass',
+  'handoff',
   'probe-implementation',
   'probe-spec',
   'sync-cases',
+  'sync-styleguide',
   'testops-promote',
   'ui-recon',
   'update-yieldwerx-knowledge',
@@ -36,19 +42,24 @@ const expectedSkills = [
   'build-feature',
   'fix-defect',
   'review-code',
+  'review-pr',
   'revise-feature',
   'scaffold-app',
+  'scan-security',
   'seed-testability',
   'ship-change',
 ];
 const expectedAgents = [
+  'desktop-recon-agent.md',
   'e2e-scripter.md',
   'flake-hunter.md',
   'implementation-prober.md',
   'plotly-specialist.md',
   'script-auditor.md',
+  'security-analyst.md',
   'source-digester.md',
-  'test-case-auditor.md',
+  'tech-designer.md',
+  'testcomplete-scripter.md',
   'test-case-designer.md',
   'testops-engineer.md',
   'ui-recon-agent.md',
@@ -65,8 +76,14 @@ const expectedAgents = [
  */
 const devSkills = [
   'build-feature',
+  'forge-tech-design',
+  'review-pr',
+  'forge-unit-tests',
+  'forge-migration',
+  'sync-styleguide',
   'fix-defect',
   'review-code',
+  'review-pr',
   'revise-feature',
   'scaffold-app',
   'seed-testability',
@@ -74,6 +91,7 @@ const devSkills = [
 ];
 const devAgents = [
   'build-verifier.md',
+  'tech-designer.md',
   'code-reviewer.md',
   'requirement-clarifier.md',
   'testability-scout.md',
@@ -409,13 +427,61 @@ requireContent('plugins/yieldwerx-probe/skills/probe-spec/SKILL.md', [
   '--reconcile',
   'references/existing-analysis-modes.md',
   'references/ledger-template.md',
+  'references/plain-language.md',
   'sole source of truth for requirements',
   'Reference context only — not a requirement',
   'Do not put a knowledgebase',
+  // --- Plain language (P13) is enforced, not advised ------------------------
+  // These three habits drifted back every time the rules were prose only.
+  '**In plain words:**',
+  '`## Terms` table',
+  '**Labels are verbatim.**',
+  'Never invent an acronym or initialism',
+  '**Never abbreviate.**',
+]);
+requireContent('plugins/yieldwerx-probe/skills/probe-spec/references/plain-language.md', [
+  '## Rule 1 — Labels are verbatim',
+  '## Rule 2 — No invented acronyms or initialisms',
+  '## Rule 3 — No abbreviations',
+  '### Always exempt (never flagged)',
+  '### Never exempt',
+  '## Rule 5 — Every criterion gets an `In plain words` explanation',
+]);
+// The lexical machinery moved to the shared module in 3.1 so the PRD and spec
+// validators cannot drift apart. Pin the module, and pin that the spec
+// validator actually consumes it rather than re-growing a private copy.
+requireContent('plugins/yieldwerx-probe/scripts/lib/plain-language.mjs', [
+  'export const exemptAcronyms',
+  'export const bannedAbbreviations',
+  'export function acronymTokens',
+  'export function parseTermsTable',
+  'export function plainLanguageIssues',
+  'export function averageSentenceLength',
+]);
+requireContent('plugins/yieldwerx-probe/skills/probe-spec/scripts/validate-spec-analysis.mjs', [
+  "from '../../../scripts/lib/plain-language.mjs'",
+  'function checkPlainLanguage',
+  'In plain words',
+]);
+forbidContent('plugins/yieldwerx-probe/skills/probe-spec/scripts/validate-spec-analysis.mjs', [
+  [
+    'const exemptAcronyms',
+    'the acronym allowlist lives in scripts/lib/plain-language.mjs; a private copy drifts',
+  ],
+  [
+    'const bannedAbbreviations',
+    'the abbreviation list lives in scripts/lib/plain-language.mjs; a private copy drifts',
+  ],
+]);
+requireContent('plugins/yieldwerx-probe/agents/source-digester.md', [
+  'Copy every name exactly, and never invent a short form',
+  'character for character',
 ]);
 requireContent('plugins/yieldwerx-probe/references/process/PROBE-PROCESS.md', [
   'both formats use the same readable shape',
   '**Summary:** Verify that ...',
+  '**In plain words:**',
+  'Three lexical rules are enforced, not advised',
   '`Then`/`And` result uses `must` or `must not`',
   '### P16 — Existing spec analysis changes are explicit and traceable',
   '10-spec/spec-reconciliation.md',
@@ -443,92 +509,74 @@ requireContent('plugins/yieldwerx-probe/skills/probe-spec/references/ledger-temp
   '## Spec reconciliations',
   'Gate approvals (human decisions)',
   'Per-category Design Gate approvals',
-  'Claude — transcribed from direct allrounder approval',
-  'this shortcut for an unknown role',
-  'Allrounder Case Audit bypass',
-  'Allrounder Script Audit bypass',
-  'bypass all audits',
-  'Allrounder gate bypass',
-  'Decision: bypassed',
-  'PROBE Owner override',
-  'Known gap / residual risk',
-  '## Waivers',
+  "Recorded by: Claude — transcribed from the human's direct approval",
+  'never writes an approval the human did not state',
+  '| Gate | Scope | Approved by | Role | Timestamp | Confirmed | Evidence |',
+  'pending · in-progress · done · blocked · n/a',
+  'governance/human-gates.md',
+  '## Case amendments',
 ]);
 requireContent('plugins/yieldwerx-probe/skills/gate-design/SKILL.md', [
-  '`READY FOR APPROVAL`',
-  '## Per-category approval (partial sync)',
-  'fill only that category',
-  'a direct statement such as',
-  'transcribed from direct allrounder approval',
-  'Allrounder solo approval under',
-  'Allrounder Case Audit bypass',
-  '/bypass-gate <feature> case-audit',
-  'material input change makes',
-  'Allrounder Design Gate bypass',
-  'waived — allrounder gate bypass',
-  'Do not treat a bare `approved` as an audit bypass',
-  'PROBE Owner override',
-  'covered by the exact allrounder audit waiver or PROBE Owner receipt',
+  'governance/human-gates.md',
+  'Gaps and open items',
+  'No readiness stamp',
+  'YYYY-MM-DD HH:MM',
+  "Recorded by: Claude — transcribed from the human's direct approval",
+  '**Claude never writes an approval the human did not state.**',
+  '`continue`, `go ahead`, and `looks fine` are not',
+  'For `--category CAT-NN`, fill only that',
+  'falsified evidence',
 ]);
 requireContent('plugins/yieldwerx-probe/references/process/PROBE-PROCESS.md', [
-  'Case Audit bypass',
-  'Script Audit bypass',
-  '`bypass all audits`',
-  'Gate bypass',
-  '`/bypass-gate`',
-  'Done — Ops Gate bypassed',
-  'PROBE Owner override',
-  'probe owner-bypass authorize',
-  'Other roles still sign manually',
-]);
-requireContent('plugins/yieldwerx-probe/skills/bypass-gate/SKILL.md', [
-  'bypass all gates',
-  'bypass all audits',
-  '`--category` with `merge`',
-  'Reject `bypass everything`',
-  'waived — allrounder Script Audit bypass',
-  'Any material change to those inputs makes the waiver',
-  'Script Audit bypass satisfies Stability Run and Merge Gate',
-  'Design Gate bypass authorizes',
-  'Merge Gate bypass satisfies',
-  'Done — Ops Gate bypassed',
-  'Claude — transcribed from direct allrounder bypass',
-  'A gate bypass is not approval, and an audit bypass is not PASS',
+  '**Any role may approve any gate.**',
+  'Claude never writes an approval the human did not',
+  'Approving with known gaps is a real decision',
+  'Severity is **classification, not control flow.**',
+  'There is no waiver table, because nothing in the process can be waived',
+  '### P4 — No scripting before the Design Gate',
+  'human-gates.md',
 ]);
 requireContent('plugins/yieldwerx-probe/skills/audit-scripts/SKILL.md', [
-  '/bypass-gate <feature> script-audit',
-  'waived — allrounder Script Audit bypass',
-  'commit/file-hash manifest',
+  '## This is advisory, not a gate',
+  'It **blocks nothing**',
+  'It **needs no waiver**',
+  'file-hash manifest exists',
 ]);
 requireContent('plugins/yieldwerx-probe/skills/green-run/SKILL.md', [
-  'waived — allrounder Script Audit bypass',
-  'changed manifest invalidates',
+  'is advisory and is not a precondition',
+  'green ×3',
 ]);
 requireContent('plugins/yieldwerx-probe/skills/gate-merge/SKILL.md', [
-  'Allrounder Script Audit bypass',
-  'exact stability-run manifest',
-  'does not bypass the Merge Gate',
-  'Allrounder Merge Gate bypass',
-  'waived — allrounder gate bypass',
-  'does not merge',
+  'governance/human-gates.md',
+  'Gaps and open items',
+  '**This gate never merges anything.**',
+  'YYYY-MM-DD HH:MM',
+  '**Claude never writes an approval the human did not state.**',
 ]);
 requireContent('plugins/yieldwerx-probe/skills/gate-ops/SKILL.md', [
-  'Allrounder Ops Gate bypass',
-  'Done — Ops Gate bypassed',
+  'governance/human-gates.md',
+  'Gaps and open items',
+  "feature's automation outcome as **Done**",
+  '**Claude never writes an approval the human did not state.**',
 ]);
 requireContent('plugins/yieldwerx-probe/skills/forge-scripts/SKILL.md', [
-  'allrounder Design Gate bypass',
-  'recorded case/spec hashes still match',
-  'does not silently waive',
+  '**Gate approvals** table',
+  'no audit verdict, no hash',
+  'governance/human-gates.md',
 ]);
 requireContent('plugins/yieldwerx-probe/skills/testops-promote/SKILL.md', [
-  'waived — allrounder gate bypass',
+  '**The Merge Gate has a recorded human approval.**',
   'normal repository authorization',
 ]);
 requireContent('plugins/yieldwerx-probe/adapters/aio/scripts/aio-sync.ts', [
   'isDesignGateAuthorized',
   'isCategoryGateAuthorized',
-  'transcribed from direct allrounder gate bypass',
+  'function readGateApprovals',
+  'function readLegacyDesignGateStatus',
+  // The stage table also carries `DESIGN GATE | … | done`, so consulting the
+  // pre-3.0 fallback when the approvals table exists but is empty authorized a
+  // live production push from a ledger nobody had approved.
+  'if (approvals !== null) {',
   'Design Gate authorized',
   'function aioExclusionReason',
   "tags.has('@testtype:api')",
@@ -536,7 +584,6 @@ requireContent('plugins/yieldwerx-probe/adapters/aio/scripts/aio-sync.ts', [
   "tags.has('@testtype:performance')",
   "tags.has('@api')",
   "tags.has('@retired')",
-  'function readDesignGateRow',
   'No AIO-eligible scenarios',
   // --- Live-API payload contracts -----------------------------------------
   // Each marker below is a capability that was discovered against the live AIO
@@ -639,20 +686,6 @@ requireContent('plugins/yieldwerx-probe/skills/flake-triage/SKILL.md', [
   'Never replace the first failure',
   'same evidence packet',
 ]);
-requireContent('plugins/yieldwerx-probe/skills/owner-bypass/SKILL.md', [
-  'Tafseer Haider',
-  'tafseer.haider@yieldwerx.com',
-  'PROBE_OWNER_BYPASS_PIN',
-  'Never ask for, read, echo, log, or store the PIN',
-  'probe owner-bypass consume',
-]);
-requireContent('plugins/yieldwerx-probe/scripts/owner-bypass.mjs', [
-  'Enter PROBE Owner bypass PIN',
-  'timingSafeEqual',
-  'receipt has expired',
-  "status: 'consumed'",
-  'secretIncluded: false',
-]);
 requireContent('plugins/yieldwerx-probe/skills/forge-cases/SKILL.md', [
   '20-cases/coverage-notes.md',
   'Visual candidates: <TC ids or planned behaviors>',
@@ -663,14 +696,19 @@ requireContent('plugins/yieldwerx-probe/agents/test-case-designer.md', [
   'Visual candidates: <TC ids or planned behaviors>',
   'Visual: N/A — <specific reason>',
   'named cross-category deferral',
+  // Every category is designed at both layers (3.0). Without an explicit
+  // disposition the API layer is simply skipped and nobody notices.
+  'API candidates: <TC ids or planned behaviours>',
+  'API: N/A — <specific reason>',
+  'Target forge',
 ]);
-requireContent('plugins/yieldwerx-probe/skills/audit-cases/SKILL.md', [
-  '20-cases/coverage-notes.md',
-  'Missing per-category visual disposition',
-]);
-requireContent('plugins/yieldwerx-probe/agents/test-case-auditor.md', [
-  'Visual candidates: <TC ids or planned behaviors>',
-  'Missing per-category visual disposition',
+requireContent('plugins/yieldwerx-probe/skills/forge-cases/SKILL.md', [
+  '## The API dimension — required per category',
+  'API candidates: <TC ids or planned behaviours>',
+  'API: N/A — <specific reason>',
+  '<category>-api.feature',
+  'Target forge',
+  'repository-only by policy',
 ]);
 requireContent('plugins/yieldwerx-probe/skills/forge-scripts/SKILL.md', [
   'For every eligible `@visual` scenario',
@@ -785,16 +823,11 @@ requireContent('plugins/yieldwerx-probe/references/configuration.md', [
 ]);
 requireContent('README.md', [
   'https://github.com/tafseer-yw/yieldwerx-probe.git',
-  'All 34 `yw:*` skills are explicitly user-invocable',
+  'All 42 `yw:*` skills are explicitly user-invocable',
   'examples/node-ts-spa/probe.config.yaml',
-  '<case-audit\\|script-audit\\|audits\\|design\\|merge\\|ops\\|all>',
-  '`audits` and `all` are deliberately separate',
+  '## Gates are human decisions',
 ]);
-requireContent('docs/SKILL-USAGE.md', [
-  '<case-audit\\|script-audit\\|audits\\|design\\|merge\\|ops\\|all>',
-  '`all` means Design, Merge, and Ops gates only',
-  'commit/file-hash manifest',
-]);
+requireContent('docs/SKILL-USAGE.md', ['There are no bypass, waiver, or override arguments']);
 requireContent('plugins/yieldwerx-probe/agents/build-verifier.md', [
   'Report failures verbatim',
   'unmet obligations is still reported as `red`',
@@ -804,52 +837,313 @@ requireContent('plugins/yieldwerx-probe/agents/code-reviewer.md', [
   'Never edit code',
 ]);
 
-// --- Gate hibernation (P17) -------------------------------------------------
-// Hibernation is only safe because it suspends BLOCKING and nothing else. Each
-// marker below is one of the properties that keeps it from becoming a silent
-// waiver: evidence still assembled, verdict still honest, never rendered as
-// approval, and every proceeding stage recorded so resumption has a debt list.
-requireContent('plugins/yieldwerx-probe/references/governance/gate-hibernation.md', [
-  'without pretending they passed',
-  'The severity ladder is untouched',
-  'No gate is ever reported as approved',
-  'gate-debt list',
-  'An expired hibernation is reported as expired',
-]);
-requireContent('plugins/yieldwerx-probe/references/process/PROBE-PROCESS.md', [
-  '### P17 — Gates may be hibernated, never faked',
-  'Hibernation suspends blocking and nothing else',
+// --- Human gates (v3.0) ------------------------------------------------------
+// A gate is a record of a human decision and nothing else. Each marker below is
+// one of the properties that keeps it that way: facts instead of a verdict, every
+// gap listed, a timestamped approval row, and the one hard rule that Claude never
+// writes an approval a human did not state.
+requireContent('plugins/yieldwerx-probe/references/governance/human-gates.md', [
+  'each one is **a record of a human decision**',
+  '**Assemble**',
+  '**Facts, not verdicts.**',
+  'Gaps are listed, never hidden and never softened',
+  '`YYYY-MM-DD HH:MM` local time',
+  '## The one hard rule',
+  '## What is not a gate',
+  'Repository controls are not PROBE',
 ]);
 for (const gate of ['gate-design', 'gate-merge', 'gate-ops']) {
   requireContent(`plugins/yieldwerx-probe/skills/${gate}/SKILL.md`, [
-    '## Gate hibernation (evaluation mode)',
-    'HIBERNATED — evidence assembled, not signed',
-    'Assemble',
+    'governance/human-gates.md',
+    'Gaps and open items',
+    'YYYY-MM-DD HH:MM',
+    '**Claude never writes an approval the human did not state.**',
   ]);
+  // The mechanisms 3.0 removed. Asserting their ABSENCE is what stops a
+  // well-meaning "restore the old gate behaviour" change from bringing back a
+  // computed verdict and the four override systems that existed to argue with it.
   forbidContent(`plugins/yieldwerx-probe/skills/${gate}/SKILL.md`, [
+    ['READY FOR APPROVAL', 'a gate reports facts, never a computed readiness verdict (v3.0)'],
+    ['NOT READY', 'a gate reports facts, never a computed readiness verdict (v3.0)'],
     [
-      'hibernated — approved',
-      'a hibernated gate is never rendered as approval (P17); that is falsified evidence',
+      'hibernat',
+      'gate hibernation was removed in 3.0; gates no longer block, so there is nothing to suspend',
     ],
+    [
+      'allrounder',
+      'the allrounder bypass roles were removed in 3.0; any role may approve any gate',
+    ],
+    [
+      'bypass-gate',
+      '/bypass-gate was removed in 3.0; a gate that is not approved is simply not approved',
+    ],
+    ['owner-bypass', '/owner-bypass was removed in 3.0; there is no computed blocker to override'],
   ]);
 }
-requireContent('plugins/yieldwerx-probe/skills/forge-scripts/SKILL.md', [
-  'Gate hibernation is checked first',
-  'real readiness verdict',
+forbidContent('plugins/yieldwerx-probe/skills/probe-spec/references/ledger-template.md', [
+  ['## Waivers', 'the waiver table was removed in 3.0; nothing in the process can be waived'],
+  ['hibernat', 'gate hibernation was removed in 3.0'],
+  ['waived', 'the `waived` ledger status was removed in 3.0'],
 ]);
-requireContent('plugins/yieldwerx-probe/skills/testops-promote/SKILL.md', [
-  'or hibernated',
-  'Hibernation never affects this',
+forbidContent('plugins/yieldwerx-probe/references/process/PROBE-PROCESS.md', [
+  ['### P17', 'P17 (gate hibernation) was removed in 3.0'],
 ]);
-requireContent('plugins/yieldwerx-probe/skills/probe-spec/references/ledger-template.md', [
-  '### Gate hibernation (repository-wide',
-  'These rows are the gate-debt list',
-  'hibernated — evaluation mode',
+forbidContent('config/probe-config.schema.json', [
+  [
+    'governance',
+    'governance.gates was removed in 3.0; gates no longer block, so there is nothing to configure',
+  ],
+]);
+forbidContent('bin/probe.mjs', [['owner-bypass', 'the owner-bypass command was removed in 3.0']]);
+
+// --- The no-shell adapter (v3.0) --------------------------------------------
+// Every PROBE capability with an executable behind it was reachable only through
+// a shell command, so in a host that gives the assistant no shell — Claude
+// Desktop — /sync-cases had no engine at all and the validator, lint and coverage
+// commands were unreachable for the same reason. These markers pin the fix:
+// verbs rather than commands, an engine probe that never degrades silently, and
+// the tool-side confirmation that replaces a Bash guard which cannot fire here.
+requireContent('plugins/yieldwerx-probe/adapters/mcp/server.mjs', [
+  "method === 'tools/list'",
+  "method === 'tools/call'",
+  'confirm !== true',
+  'Refused: aio_sync writes to the production Jira tenant',
+  'scriptEnvironment',
+  'runConfiguredCommand',
+]);
+requireContent('plugins/yieldwerx-probe/references/integrations/case-management.md', [
+  '## The six verbs',
+  '`plan` needs no credentials and writes nothing',
+  '`push` is refused without both',
+  '### 3. Export bundle — neither is available',
+  'never claim a sync happened',
+]);
+requireContent('plugins/yieldwerx-probe/skills/sync-cases/SKILL.md', [
+  '## Step 0 — pick an engine for this host',
+  '**Never silently degrade.**',
+  'blocked — no sync engine available',
+  'integrations/case-management.md',
+]);
+requireContent('plugins/yieldwerx-probe/references/configuration.md', [
+  '## Hosts without a shell',
+  'validated: inline (no shell host)',
+  '**Never silently degrade.**',
+]);
+const pluginManifestText = fs.readFileSync(
+  path.join(root, 'plugins', 'yieldwerx-probe', '.claude-plugin', 'plugin.json'),
+  'utf8',
+);
+if (!pluginManifestText.includes('${CLAUDE_PLUGIN_ROOT}/adapters/mcp/server.mjs')) {
+  errors.push(
+    'plugin.json must declare the probe-tools MCP server; without it a no-shell host has no engine for Case Sync',
+  );
+}
+if (!packageManifest.files?.includes('plugins/yieldwerx-probe/adapters/mcp/')) {
+  errors.push('package.json files must ship plugins/yieldwerx-probe/adapters/mcp/');
+}
+
+// --- Security (3.1) ------------------------------------------------------------
+// OWASP Top 10:2025 (verified against owasp.org 2026-08-19 — this is the 2025
+// edition, and A03/A10 did not exist in 2021). Authored categories a scanner
+// cannot judge, scanned categories through a swappable tool contract, and the
+// authorization rule that active scanning is a live action.
+requireContent('plugins/yieldwerx-probe/references/security/owasp-2025.md', [
+  'A03 | Software Supply Chain Failures',
+  'A10 | Mishandling of Exceptional Conditions',
+  '**No scanner covers the Top Ten.**',
+  '@owasp:A01',
+  'An active scan sends attack traffic',
+]);
+requireContent('plugins/yieldwerx-probe/references/integrations/security-tools.md', [
+  '## The five verbs',
+  'need no target authorization',
+  'refused without',
+  'commands.securityFuzz',
+]);
+requireContent('plugins/yieldwerx-probe/skills/forge-security-tests/SKILL.md', [
+  '@owasp:ANN',
+  'A01 Broken Access Control',
+  'never from what the app currently does',
+  'security-coverage.md',
+]);
+requireContent('plugins/yieldwerx-probe/skills/scan-security/SKILL.md', [
+  '## Authorization — the hard rule',
+  'refused outright',
+  '**Triage — the part that earns the skill.**',
+  'repository-only',
+]);
+
+// --- Desktop track (3.1) --------------------------------------------------------
+// TestComplete BDD against the WinForms client: one case of record across two
+// runners, aliases-only identity, and the exit-code/interactive-session
+// contract that makes desktop CI behave. Facts verified against the SmartBear
+// documentation 2026-08-19; the pins keep a future edit from re-inventing them.
+requireContent('plugins/yieldwerx-probe/references/profiles/testcomplete-winforms/README.md', [
+  '**Scenarios**',
+  'Python is fully supported for BDD',
+  'NameMapping',
+  '## The one case of record',
+  'interactive session is required',
+  // The desktop suite is maintained by a different team from the one that owns
+  // the cases. All three hazards of that split are silent when they go wrong.
+  '## Operating model — a separate team, a shared case of record',
+  'refused, never guessed',
+  'Never report them as `@automated`',
+  '### What each team owns',
+]);
+// `@desktop` is a SURFACE, not a level. A behaviour reachable only through the
+// desktop app is still e2e or component; the surface rides alongside exactly as
+// `@visual`, `@a11y`, and `@api` do. Inventing a `@testtype:desktop` level
+// breaks the level set's meaning and every count built on it.
+forbidContent('plugins/yieldwerx-probe/skills/forge-cases/SKILL.md', [
+  ['@testtype:desktop', '`desktop` is a surface tag, not a test level'],
+]);
+forbidContent('plugins/yieldwerx-probe/skills/probe-spec/SKILL.md', [
+  ['@testtype:desktop', '`desktop` is a surface tag, not a test level'],
+]);
+forbidContent('plugins/yieldwerx-probe/agents/test-case-designer.md', [
+  ['@testtype:desktop', '`desktop` is a surface tag, not a test level'],
+]);
+forbidContent('plugins/yieldwerx-probe/skills/forge-desktop-scripts/SKILL.md', [
+  ['@testtype:desktop', '`desktop` is a surface tag, not a test level'],
+]);
+requireContent('plugins/yieldwerx-probe/skills/forge-cases/SKILL.md', [
+  '**`@desktop` is a surface tag, not a level.**',
+]);
+requireContent(
+  'plugins/yieldwerx-probe/references/profiles/testcomplete-winforms/rules/name-mapping-policy.md',
+  [
+    'WinFormsControlName',
+    "omit a control's name from the executable",
+    '**Aliases are the test-facing API.**',
+  ],
+);
+requireContent(
+  'plugins/yieldwerx-probe/references/profiles/testcomplete-winforms/docs/ci-testexecute.md',
+  [
+    'interactive user session is required',
+    '/ExportSummary',
+    '**only exit 2 counts against the stability streak.**',
+  ],
+);
+requireContent('plugins/yieldwerx-probe/skills/forge-desktop-scripts/SKILL.md', [
+  'Scenarios',
+  'recorded human Design Gate approval',
+  '**Import, never transcribe.**',
+  '@automated',
+]);
+requireContent('plugins/yieldwerx-probe/skills/desktop-recon/SKILL.md', [
+  'control-name-gaps.md',
+  'name-mapping-inventory.md',
+  '/seed-testability',
+]);
+
+// --- Dev design & build (3.1) --------------------------------------------------
+// The dev track's design/build pipeline: design from the analysis (never the
+// raw PRD), the routed-AC promise kept by unit tests, migration safety rules,
+// and styleguide conformance against the repo's own authority.
+requireContent('plugins/yieldwerx-probe/skills/forge-tech-design/SKILL.md', [
+  '10-spec/spec-analysis.md',
+  'NEEDS_INFO',
+  'decisions/NNNN-<slug>.md',
+  'threat sketch',
+  'provisional',
+]);
+requireContent('plugins/yieldwerx-probe/skills/forge-unit-tests/SKILL.md', [
+  'dev-handoff.md',
+  'never read back from the code under test',
+  'D12',
+]);
+requireContent('plugins/yieldwerx-probe/skills/forge-migration/SKILL.md', [
+  '**Never edit an applied migration.**',
+  '**Additive first.**',
+  '**NOT NULL on a populated table is two steps.**',
+  '**Seeds are idempotent.**',
+  'forward-only',
+]);
+requireContent('plugins/yieldwerx-probe/skills/sync-styleguide/SKILL.md', [
+  'plugin never bundles a copy',
+  '**Conformance, not aesthetics.**',
+  'commands.designCheck',
+]);
+requireContent('plugins/yieldwerx-probe/skills/build-feature/SKILL.md', [
+  '--stack',
+  '--layer',
+  'fe-handoff.md',
+  'D12',
+]);
+requireContent('plugins/yieldwerx-probe/agents/requirement-clarifier.md', [
+  'recommended answer and one line of',
+  'A question without a stance is a survey',
+]);
+requireContent('plugins/yieldwerx-probe/references/process/DEV-TRACK.md', [
+  '### D12 — Every dev skill ends in exactly one of four states',
+  'always carries a recommended default',
+]);
+
+// --- Requirements Forge (3.1) -------------------------------------------------
+// The PRD is requirements truth for both tracks, its lifecycle lives in the
+// filename, and sign-off is a recorded human decision. Pin the skill to the
+// template/validator pair so the three cannot drift.
+requireContent('plugins/yieldwerx-probe/skills/forge-prd/SKILL.md', [
+  'references/prd-template.md',
+  'plain-language.md',
+  'validate-prd.mjs',
+  'Claude records the',
+  'never copy',
+]);
+requireContent('plugins/yieldwerx-probe/skills/forge-prd/references/prd-template.md', [
+  '## Lifecycle — the filename is the state',
+  'prd-signed-off.md',
+  '**In plain words:**',
+  '**Done means:**',
+  '| Q | Question | Who can answer | Recommended answer | Why | Status |',
+]);
+requireContent('plugins/yieldwerx-probe/skills/forge-prd/scripts/validate-prd.mjs', [
+  "from '../../../scripts/lib/plain-language.mjs'",
+  'Sign-off is a recorded human decision',
+  'Rename, never copy',
+]);
+
+// --- Two tracks, one spec, stack routing (3.1) -------------------------------
+// The shared Spec Probe and profile-driven --stack routing are the mechanisms
+// that keep dev and QA on one requirement and one skill set. Pin them so a
+// future edit cannot quietly fork the analysis or hardcode a stack.
+requireContent('plugins/yieldwerx-probe/skills/probe-spec/SKILL.md', [
+  'track: shared',
+  '## One analysis, two tracks',
+  '**Neither track regenerates it.**',
+  'Run by: <name>',
+]);
+requireContent('plugins/yieldwerx-probe/references/profiles/README.md', [
+  '## How a stack is selected',
+  '## What every profile MUST contain',
+  '**Traps**',
+  'provisional',
+]);
+requireContent('plugins/yieldwerx-probe/references/profiles/dotnet-legacy/README.md', [
+  'Controller → BL (business logic) Service → DL (data logic) Service → Repository',
+  'Lot_Sequence',
+  'TODO(repo)',
+  '## Traps',
+]);
+requireContent('plugins/yieldwerx-probe/references/profiles/dotnet-modern/README.md', [
+  'PROVISIONAL',
+  'No repository stands behind this profile yet',
+  '## Graduating this profile',
+]);
+requireContent('plugins/yieldwerx-probe/references/configuration.md', [
+  '## Application stacks (`--stack`)',
+  'Never guess a stack',
+]);
+requireContent('plugins/yieldwerx-probe/references/process/DEV-TRACK.md', [
+  '### D9 — One skill set, many stacks',
+  '### D10 — Spec Probe is shared, and the analysis is jointly owned',
 ]);
 
 const readme = fs.readFileSync(path.join(root, 'README.md'), 'utf8');
-if (!readme.includes('## All 34 public skills: arguments and composition')) {
-  errors.push('README.md: missing the explicit all-34 public skill inventory heading');
+if (!readme.includes('## All 42 public skills: arguments and composition')) {
+  errors.push('README.md: missing the explicit all-42 public skill inventory heading');
 }
 const skillUsage = fs
   .readFileSync(path.join(root, 'docs', 'SKILL-USAGE.md'), 'utf8')

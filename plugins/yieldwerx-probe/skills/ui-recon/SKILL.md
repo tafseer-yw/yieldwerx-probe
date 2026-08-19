@@ -1,7 +1,7 @@
 ---
 name: ui-recon
 user-invocable: true
-description: Use when a UI environment exists before scripting — drives the live app through the configured browser connector to walk cases authorized by Design Gate approval or explicit allrounder bypass, harvest stable selectors, capture states, and flag profile-defined observability gaps. Can coordinate API Recon and assisted case execution in the same authorized browser walk. PROBE UI Recon stage (optional but strongly recommended).
+description: Use when a UI environment exists before scripting — drives the live app through the configured browser connector to walk cases authorized by a recorded human Design Gate approval, harvest stable selectors, capture states, and flag profile-defined observability gaps. Can coordinate API Recon and assisted case execution in the same authorized browser walk. PROBE UI Recon stage (optional but strongly recommended).
 track: scripting
 safety: writes-local
 produces: .probe/artifacts/<feature>/40-ui-recon/ui-recon.md, locator-inventory.md, testid-gaps.md, network-observations.md, screenshots/
@@ -86,8 +86,8 @@ write it to every applicable artifact. When all three are needed, use:
 
 ## Preconditions
 
-- Human Design Gate approval or explicit allrounder Design Gate bypass
-  recorded — recon walks only that exact authorized scope.
+- A recorded human Design Gate approval for the scope — recon walks only that
+  exact authorized scope.
 - For UI categories, a reachable configured environment with real URLs and the
   **configured browser connector**. If either is missing, stop, mark UI Recon
   `blocked` in the ledger with the reason, and say what's needed. This does not

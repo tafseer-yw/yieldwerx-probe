@@ -25,7 +25,6 @@
 ## Downstream impact
 
 - **Cases:** Update cases linked to AC-02 and add coverage for AC-09
-- **Case Audit:** Rerun for AC-02 and AC-09
 - **Design Gate:** Review and re-sign affected coverage
 - **Scripts and run evidence:** Review linked scripts and mark old results stale
 - **External case sync:** Resync linked AIO cases after amendment

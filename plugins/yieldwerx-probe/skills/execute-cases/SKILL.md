@@ -5,7 +5,7 @@ description: Use when Design-Gate-authorized UI cases should be executed through
 track: design
 safety: reads-external-writes-local
 produces: .probe/artifacts/<feature>/50-exploratory/executions/execution-summary.md, runs/<TC-id>.md, failures/<fingerprint>/
-consumes: approved Gherkin cases, Design Gate approval or exact allrounder bypass, configured browser connector, optional UI Recon evidence
+consumes: approved Gherkin cases, a recorded human Design Gate approval, configured browser connector, optional UI Recon evidence
 argument-hint: <feature-slug> [env] [--tc <id,id,...>] [--role <role>] [--continue-on-failure]
 ---
 
@@ -34,7 +34,7 @@ automation, does not create scripts, and never adds `@automated`.
 
 ## When
 
-Use after Design Gate approval or an exact allrounder Design Gate bypass when
+Use after a recorded human Design Gate approval when
 the application is reachable and approved cases should be executed against a
 named build. Prefer the normal Playwright Test runner for implemented CI tests.
 
@@ -77,7 +77,7 @@ than starting both skills independently.
 
 1. Resolve the requested feature, environment, role, tenant, build/version,
    and TC selector. Fail closed when the selector matches no cases. Accept only
-   the exact Design-Gate-approved or allrounder-bypassed scope.
+   the exact Design-Gate-approved scope.
 2. Confirm that the configured Playwright MCP browser tools are available and
    the target is reachable. If the connector is missing, stop and record the
    batch as blocked; do not fabricate execution. Never guess a launch command.

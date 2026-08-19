@@ -25,8 +25,8 @@ capture, while keeping release-risk decisions explicit.
 ## What
 
 Consolidate exploratory charters, sessions, findings, and manual or assisted
-executions of cases authorized by Design Gate approval or exact allrounder
-bypass - or a signed decision not to execute them.
+executions of cases authorized by a recorded human Design Gate approval - or a
+recorded decision not to execute them.
 
 ## When
 
@@ -62,9 +62,8 @@ Stability Run when the ledger records that reliance.
    - **Manual run:** build, environment, executor, and exact per-case
      `pass | fail | blocked` result with a note and source for every non-pass.
 2. Write `.probe/artifacts/<feature>/50-exploratory/exploratory-status.md` and
-   `manual-run.md` for the applicable evidence. Only the exact approved or
-   bypass-authorized scope counts as planned execution; other observations are
-   exploratory findings.
+   `manual-run.md` for the applicable evidence. Only the exact approved scope
+   counts as planned execution; other observations are exploratory findings.
 3. Preview manual-status changes. Sync to Jira AIO only with explicit
    authorization for the listed eligible cases; otherwise record
    `sync: pending`. `/execute-cases` never performs that sync itself.

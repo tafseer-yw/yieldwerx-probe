@@ -1,11 +1,11 @@
 ---
 name: forge-cases
 user-invocable: true
-description: Use when spec analysis is done and QA-owned UI, API, contract, security, or API-performance test cases must be designed as Gherkin feature files, in business-readable procedural style with automation pacing, candidacy, and a developer-owned unit/internal-integration hand-off. The AIO push is separate; amend existing cases with /update-cases. PROBE Case Forge stage.
+description: Use when spec analysis is done and QA-owned UI and API test cases must be designed as Gherkin feature files — every category gets both a visual disposition and an API disposition, and API coverage spans functional, negative, boundary, authorization, contract, and approved-workload dimensions. Business-readable procedural style with automation pacing, candidacy, and a developer-owned unit/internal-integration hand-off. The AIO push is separate; amend existing cases with /update-cases. PROBE Case Forge stage.
 track: design
 safety: writes-shared
-produces: features/<feature-slug>/<category>.feature (permanent @manual, no @automated at design, one per CAT), .probe/artifacts/<feature>/20-cases/case-details.md (terse tables), .probe/artifacts/<feature>/20-cases/automation-plan.md (TC/effort/tier/disposition), .probe/artifacts/<feature>/20-cases/dev-handoff.md, .probe/artifacts/<feature>/20-cases/scope-manifest.md, .probe/artifacts/<feature>/20-cases/coverage-notes.md (only what coverage:req cannot derive)
-consumes: .probe/artifacts/<feature>/10-spec/spec-analysis.md, optional .probe/artifacts/<feature>/15-implementation-probe/implementation-comparison.md
+produces: features/<feature-slug>/<category>.feature and features/<feature-slug>/<category>-api.feature (permanent @manual, no @automated at design, one pair per CAT), .probe/artifacts/<feature>/20-cases/case-details.md (terse tables), .probe/artifacts/<feature>/20-cases/automation-plan.md (TC/effort/tier/disposition/target-forge), .probe/artifacts/<feature>/20-cases/dev-handoff.md, .probe/artifacts/<feature>/20-cases/scope-manifest.md, .probe/artifacts/<feature>/20-cases/coverage-notes.md (only what coverage:req cannot derive)
+consumes: .probe/artifacts/<feature>/10-spec/spec-analysis.md, optional .probe/artifacts/<feature>/15-implementation-probe/implementation-comparison.md, optional .probe/artifacts/<feature>/40-api-recon/api-inventory.md
 argument-hint: <feature-slug> [--scenario-type positive|functional|negative|edge|all] [--category CAT-NN] [--ac AC-NN]
 ---
 
@@ -24,8 +24,10 @@ reviewer can execute and understand without automation terminology.
 
 ## What
 
-Create procedural Gherkin for the requested scenario types, plus expected-value
-details, automation candidacy, scope, and developer-owned coverage handoff.
+Create procedural Gherkin for the requested scenario types at both the UI and the
+API layer, plus expected-value details, automation candidacy, scope, and
+developer-owned coverage handoff. Every category records an explicit visual
+disposition **and** an explicit API disposition.
 
 ## When
 
@@ -43,12 +45,12 @@ Resolve selectors such as `--scenario-type functional`, map ACs to categories,
 write visible sequential actions and verifications, preserve stable IDs, run
 configured Gherkin lint, and fail closed when the selected scope is empty.
 
-Design the **QA-owned** test cases as Gherkin feature files, one per testable
-category, plus the automation pacing/candidacy plan and the developer-owned
-coverage hand-off. Case Sync handles Jira AIO.
+Design the **QA-owned** test cases as Gherkin feature files — a UI file and an API
+file per testable category — plus the automation pacing/candidacy plan and the
+developer-owned coverage hand-off. Case Sync handles Jira AIO.
 Read `10-spec/spec-analysis.md` and, when present, the distilled
 `15-implementation-probe/implementation-comparison.md` (PROBE policy P7 —
-never the raw PRD).
+never the raw PRD) and `40-api-recon/api-inventory.md`.
 When the selected scope includes a rendered UI, chart, map, or dashboard, also
 read the active profile's visual-testing guidance when that profile provides
 one. Plugin profile references do not load automatically.
@@ -95,9 +97,9 @@ A scoped run is an incremental authoring cycle, not feature completion:
   and ACs. Mark Case Forge `in-progress — partial` while applicable inventory
   remains. Only a full reconciliation proving zero remaining inventory may set
   the feature-level stage to `done`.
-- A subset may be audited, but it can never make the Design Gate ready by
-  itself. Feature-level gates still require every applicable risk dimension to
-  be designed, routed, marked `N/A` with a reason, or human-waived.
+- A subset never completes the feature's design. Feature-level completion still
+  requires every applicable risk dimension to be designed, routed, or marked
+  `N/A` with a reason.
 
 ## Scope — QA designs observable UI and API contracts
 
@@ -108,17 +110,98 @@ Developers retain unit and implementation-internal integration testing.**
 - Author scenarios at `@testtype:e2e`, `@testtype:component`,
   `@testtype:security`, `@testtype:api`, `@testtype:contract`, or
   `@testtype:performance`. Performance design maps to k6, not Playwright steps.
+- **`@desktop` is a surface tag, not a level.** A behavior reachable only through
+  the WinForms desktop application is still `@testtype:e2e` (a workflow) or
+  `@testtype:component` (one screen); it additionally carries `@desktop`, which
+  is what routes it to `/forge-desktop-scripts` at automation time instead of
+  `/forge-scripts`. It is orthogonal in exactly the way `@visual`, `@a11y`, and
+  `@api` are, and it never replaces the level. Desktop scenarios are ordinary
+  AIO-eligible manual records. Performance design maps to k6, not Playwright steps.
 - Route `unit` and implementation-internal `integration` to
   `dev-handoff.md`; do not invent a UI/API path and do not drop the AC.
 - The routing test: **can QA observe the behavior through a supported product
   interface or declared API contract?** If yes it is a QA case; if it requires
   implementation internals, route it.
 - Restricting scope must not shrink **coverage**. Every AC ends up either in a QA
-  scenario or in the hand-off table; an AC in neither is a `blocker` at Case Audit.
+  scenario or in the hand-off table; an AC in neither is an uncovered
+  requirement and appears in the Design Gate's Gaps list.
 - Verification depth is unchanged: a QA `e2e` scenario still asserts against
   independent truth (oracle / DB / API) for wrong-data-risk ACs. The _level_ is
   UI-driven; the _truth layers_ are not. What moves to developers is the
   standalone non-UI case, never the oracle.
+
+## The API dimension — required per category
+
+**Every category is designed at both layers.** A feature with a service behind it
+gets UI cases *and* API cases; designing only what is visible in a browser leaves
+the layer where most business rules actually live untested until someone notices.
+
+This works exactly like the visual disposition that already exists: each selected
+`CAT-NN` records **one** line in `20-cases/coverage-notes.md`:
+
+```
+API candidates: <TC ids or planned behaviours>
+API: N/A — <specific reason>
+```
+
+A generic `N/A` is not acceptable. "This category has no service surface — the
+character limit is enforced entirely in the browser and never reaches the server"
+is a reason. "Covered elsewhere" is not; name the `CAT-NN` and the operations it
+covers.
+
+### Cover the dimensions, not just the happy path
+
+For a category with a service surface, design across the applicable dimensions
+rather than one API case per endpoint:
+
+| Dimension         | What it pins                                                       | Tag                                       |
+| ----------------- | ------------------------------------------------------------------ | ----------------------------------------- |
+| **Functional**    | the business operation succeeds and the state really changed       | `@functional @testtype:api`               |
+| **Negative**      | invalid input, missing fields, conflicting state — and the exact response | `@negative @testtype:api`            |
+| **Boundary**      | limits, empty sets, maximum sizes, first and last valid values     | `@edge @testtype:api`                     |
+| **Authorization** | who may call it, and what a caller without permission receives     | `@negative @testtype:security` + `@api`   |
+| **Contract**      | status, required headers, response shape and its compatibility     | `@testtype:contract`                      |
+| **Workload**      | an approved performance objective for a real operation mix         | `@testtype:performance`                   |
+
+Design the ones the category actually has. Functional, negative, and authorization
+apply to nearly every service surface; contract and workload are recorded as
+candidates or as a specific `N/A`. **Prefer fewer, sharper cases over one shallow
+case per operation** — the same boundary `/forge-api-tests` applies at
+implementation time applies here at design time.
+
+### Where the expected values come from
+
+The requirement authority rule is unchanged and matters more here, because a PRD
+usually does not state status codes or response shapes:
+
+- If the provided requirement states the rule, value, status, or message, use it.
+- If it does not, and `40-api-recon/api-inventory.md` exists, cite the inventory as
+  **observed contract** and mark the case's expected value accordingly. Observed
+  behavior is evidence, never requirement truth (policy P12).
+- If neither states something that **decides pass or fail**, raise a `Q-NN` and
+  design the case with the expectation marked open. Do not invent a status code.
+- With no API Recon at all, design at the business-operation level — name the
+  operation and outcome, not the endpoint — and record
+  `TODO(env): exact operations unconfirmed; run /api-recon` in
+  `coverage-notes.md`.
+
+### Where API cases live
+
+`features/<feature-slug>/<category>-api.feature`, beside the UI file for the same
+category. Three reasons: the UI file stays executable by hand without a tester
+skipping past service cases they cannot run; it matches the `features/api/`
+convention `/forge-api-tests` already uses; and the repository-only filter stays
+file-shaped rather than tag-shaped.
+
+Both files share the category's AC set, TC id sequence, and `case-details.md`
+tables. Nothing else changes.
+
+### API cases are repository-only
+
+`@api`, `@testtype:api`, `@testtype:contract`, and `@testtype:performance` are
+excluded from the AIO push, unconditionally, exactly as before. Record the API set
+in the ledger as `AIO: n/a — repository-only by policy`, and note the count in the
+`@testtype:` breakdown so the coverage is visible even though it is not in Jira.
 
 ## Preconditions (check the ledger; refuse if unmet)
 
@@ -126,8 +209,8 @@ Developers retain unit and implementation-internal integration testing.**
   categories** section (`CAT-NN`) plus an AC index and one Workflow or Simple
   Rule definition for every active `AC-NN`.
 - Implementation Probe is optional. If the caller explicitly requested it,
-  require `done`, `blocked` with the exact reason, `waived`, or a
-  human-recorded skip before designing. A default `pending — optional` row
+  require `done`, `blocked` with the exact reason, or a human-recorded skip
+  before designing. A default `pending — optional` row
   does not block Case Forge when no comparison was requested.
 - If spec-analysis lists unresolved `blocker`-ish ambiguities on the behaviors
   being designed, stop and ask for answers first — cases built on ambiguity
@@ -143,19 +226,26 @@ Developers retain unit and implementation-internal integration testing.**
    shrinks what the designers must consider. Only the QA-owned categories go out.
    For every selected category, inspect its AC definitions, risk dimensions,
    **Where to check** entries, and applicable Implementation Probe observations.
-   Record exactly one visual disposition in `20-cases/coverage-notes.md`:
+   Record exactly one visual disposition **and exactly one API disposition** in
+   `20-cases/coverage-notes.md`:
    `Visual candidates: <TC ids or planned behaviors>` or
-   `Visual: N/A — <specific reason>`. A visual clue such as a map outline,
-   colorscale, legend, z-order, notch, or layout must be explicitly accepted,
-   assigned to a named target category, or rejected with a reason; it may not
-   disappear between Spec Probe and case design.
+   `Visual: N/A — <specific reason>`, and
+   `API candidates: <TC ids or planned behaviours>` or
+   `API: N/A — <specific reason>`.
+   A visual clue such as a map outline, colorscale, legend, z-order, notch, or
+   layout must be explicitly accepted, assigned to a named target category, or
+   rejected with a reason; it may not disappear between Spec Probe and case design.
+   The API disposition works the same way: a category with a service surface names
+   its API candidates across the applicable dimensions, and one without gives the
+   specific reason it has none. Read the spec analysis's per-category
+   **Service surface** note and `40-api-recon/api-inventory.md` when it exists.
    If an Implementation Probe report exists, carry `divergent` and
    `not-implemented` results into case details as **known expected failures**.
    Design from the approved expectation, not from the observed result. Treat
    an implementation finding that exposes unclear intent as an open question;
    it blocks only the affected design scope until a human decides.
-3. Delegate design to the **test-case-designer** agent when available (fall back to
-   designing locally, and record that independence will come from Case Audit).
+3. Delegate design to the **test-case-designer** agent when available (fall back
+   to designing locally and record that it was a single-context design).
    **Token discipline for the fan-out — this stage is the most expensive in PROBE:**
    - **Slice the spec per agent.** Do not send the whole `spec-analysis.md`; give
      each agent only its `CAT-NN` rows, the AC index rows and definitions those
@@ -171,21 +261,23 @@ Developers retain unit and implementation-internal integration testing.**
      designer to copy current behavior into the expected result.
 4. Review the returned set for holes before persisting (coverage per AC,
    negative/edge present, ordering sane, identity tag matches the title, one
-   QA-owned `@testtype:` per scenario, and one explicit visual disposition per
-   selected category). A cross-category visual deferral must name the target
+   QA-owned `@testtype:` per scenario, and one explicit visual disposition **and
+   one explicit API disposition** per selected category). A cross-category visual deferral must name the target
    `CAT-NN` and the rendering behavior that category will cover.
 5. Write or append to the feature files at
-   **`features/<feature-slug>/<category>.feature`**,
-   one per `CAT-NN`. **Every scenario carries permanent `@manual`**, and Case
+   **`features/<feature-slug>/<category>.feature`** and, for every category with
+   API candidates, **`features/<feature-slug>/<category>-api.feature`** —
+   one pair per `CAT-NN`. **Every scenario carries permanent `@manual`**, and Case
    Forge never adds `@automated`. It is therefore manual-only at design time,
    and `bddgen` skips it because generation selects `@automated`, not because
    `@manual` excludes it. Also write `20-cases/case-details.md` (terse tables of
    literal expected values) and `20-cases/automation-plan.md` (`TC · Effort · Tier ·
-Disposition` only). **Do not write a coverage matrix** —
+Disposition · Target forge` only). **Do not write a coverage matrix** —
    the configured `requirementsCoverage` command generates it. Write
    `20-cases/coverage-notes.md` only for what that tool cannot derive:
-   type-`N/A` rationale, the mandatory per-category visual disposition, and
-   routing reconciliation.
+   type-`N/A` rationale, the mandatory per-category visual **and API**
+   dispositions, any `TODO(env)` for unconfirmed operations, and routing
+   reconciliation.
 6. **Hand off AIO-eligible non-API cases to `/sync-cases`.** Case Forge does not
    push to AIO. API/contract/performance scenarios (`@api`, `@testtype:api`,
    `@testtype:contract`, or `@testtype:performance`) remain repository-only and
@@ -206,12 +298,14 @@ Disposition` only). **Do not write a coverage matrix** —
    category, `AIO synced: yes/pending`, designed/automated/manual-only counts
    (automation is zero and manual-only equals designed here), the count of
    `@visual` scenarios, a **`@testtype:` breakdown** over the QA-owned levels
-   (e.g. `e2e 9 / component 12 / security 2`), the **routing reconciliation**
+   (e.g. `e2e 9 / component 12 / api 7 / contract 3 / security 2`), the `@desktop`
+   count alongside the `@visual` count, with the API
+   levels recorded `AIO: n/a — repository-only by policy`, the **routing reconciliation**
    (`<n> ACs in QA scenarios · <m> routed to developers · 0 uncovered`) with a
    link to `dev-handoff.md`, and a one-line pacing summary (e.g. "23 scenarios,
    ~N days at the configured rate; 6 @auto:now; 2 @visual").
 
-## Quality bar (the auditor will check these — save a round-trip)
+## Quality bar (self-check before the Design Gate)
 
 - **Gherkin discipline — house manual-execution style.** These files are the test
   case of record: a QA executes them by hand and a PO reads them for coverage, so
@@ -277,7 +371,17 @@ Disposition` only). **Do not write a coverage matrix** —
   "developer-owned"), suggested owner, suggested suite/repo. Flag routed
   wrong-data risks so the receiving developer knows they carry `blocker` severity.
   Reconcile at the end: `<n> ACs in QA scenarios · <m> routed · <k> uncovered`,
-  and **`k` must be 0** — an AC in neither place is a Case Audit `blocker`.
+  and **`k` must be 0** — an AC in neither place is an uncovered requirement and
+  appears in the Design Gate's Gaps list.
+- **API candidacy:** every selected category records `API candidates: <TC ids or
+  planned behaviours>` or `API: N/A — <specific reason>` in `coverage-notes.md`.
+  For a category with a service surface, the functional, negative, and
+  authorization dimensions are designed or given a specific reason, and contract
+  and workload are recorded as candidates or a specific `N/A`. API steps name
+  business operations and observable outcomes — never a raw URL, a bare HTTP verb,
+  a client, or a fixture. An expected status, message, or shape that the provided
+  requirement does not state is either cited to `40-api-recon/api-inventory.md` as
+  observed contract or carries an open `Q-NN`; it is never invented.
 - **Visual candidacy:** rendering-only correctness (colorscale mapping, legend
   rendering, ink-overlay z-order, notch geometry, SPC control-limit/violation
   line rendering, histogram bin coloring, dashboard tile layout, CSS bleed,
@@ -306,7 +410,7 @@ Disposition` only). **Do not write a coverage matrix** —
   (`TC-<slug>-NNN / AC-NN / <AIO id or pending>`).
 - Every designed scenario carries `@manual` permanently. Script Forge adds the
   orthogonal `@automated` tag when runnable; permanent `@manual` remains.
-- Give every scenario an approved target disposition: `automate-now`,
-  `automate-next`, `automate-later`, `manual-permanent`, `deferred-until:<condition/date>`,
-  `retired`, or `waived`. Permanent/deferred/waived dispositions require a
-  rationale, owner, and human confirmation; no case may remain unowned.
+- Give every scenario a target disposition: `automate-now`, `automate-next`,
+  `automate-later`, `manual-permanent`, `deferred-until:<condition/date>`, or
+  `retired`. Permanent, deferred, and retired dispositions require a rationale
+  and an owner; no case may remain unowned.

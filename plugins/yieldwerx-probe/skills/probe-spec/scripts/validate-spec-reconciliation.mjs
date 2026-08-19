@@ -160,13 +160,7 @@ if (result === 'format-only' && !hasFormatChange) {
 }
 
 const impactText = section('Downstream impact');
-for (const label of [
-  'Cases',
-  'Case Audit',
-  'Design Gate',
-  'Scripts and run evidence',
-  'External case sync',
-]) {
+for (const label of ['Cases', 'Design Gate', 'Scripts and run evidence', 'External case sync']) {
   if (!field(impactText, label)) errors.push(`Downstream impact needs "**${label}:**".`);
 }
 

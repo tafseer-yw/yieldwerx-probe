@@ -1,12 +1,12 @@
 ---
 name: build-feature
 user-invocable: true
-description: Use when a requirement must become a working, verified capability in the application under test — clarify without assuming, design against the repository's real layers, implement in bounded tasks, and loop on exact failures until green. Ships its own observability contracts. Runs with or without PROBE's QA track; needs no gate. PROBE development track.
+description: Use when a requirement must become a working, verified capability in the application under test — clarify without assuming, design against the declared stack's real layers, implement in bounded tasks, and loop on exact failures until green. Routes by --stack and --layer; a backend-led run emits the FE handoff report so frontend work starts without re-discovery. Ships its own observability contracts. Runs with or without PROBE's QA track; needs no gate. PROBE development track.
 track: dev
 safety: writes-code
-produces: implemented capability on branch feat/<feature-slug>; .probe/artifacts/<feature>/70-build/build-report.md
+produces: implemented capability on branch feat/<feature-slug>; .probe/artifacts/<feature>/70-build/build-report.md; .probe/artifacts/<feature>/70-build/fe-handoff.md for backend-led work
 consumes: a requirement source — a spec analysis, a PRD, or the stated request; the active profile. QA artifacts are optional enrichment, never required.
-argument-hint: <feature-slug> [--ac AC-NN] [--category CAT-NN] [--requirement <path>] [--no-requirement "<reason>"]
+argument-hint: <feature-slug> [--stack <profile-name>] [--layer backend|frontend|both] [--ac AC-NN] [--category CAT-NN] [--requirement <path>] [--no-requirement "<reason>"]
 graph:
   consumes: [doc:requirement-source, profile:active, artifact:10-spec/spec-analysis.md?]
   produces: [artifact:70-build/build-report.md, code:service, code:frontend, doc:openapi]
@@ -82,6 +82,14 @@ refusing on one, that is a defect in the skill, not the process.
 
 ## Procedure
 
+0. **Resolve the stack and layer.** `--stack` per the resolution rules in
+   `${CLAUDE_PLUGIN_ROOT}/references/configuration.md`; record which stack was
+   resolved and how, and flag a provisional profile. `--layer` narrows the work
+   to `backend`, `frontend`, or `both` (default `both`); a narrowed run still
+   designs the whole journey so the seam is explicit, and implements only its
+   side of it. When `60-design/tech-design.md` exists, it is the design of
+   record — step 3 checks it against the repository instead of designing fresh,
+   and a disagreement is recorded, dated, and resolved toward the requirement.
 1. **Establish scope.** Read the requirement source. When a spec analysis
    exists, resolve the requested `--ac` / `--category` selector against it and
    record the exact AC ids in scope — **whatever its gate status**, because the
@@ -131,11 +139,22 @@ refusing on one, that is a defect in the skill, not the process.
    returns failures verbatim. Failures go straight back into the implementing
    step unchanged. Loop until the verdict is green with no unmet obligations, or
    until blocked on a human decision — and say which.
+8a. **Backend-led work emits the FE handoff.** When `--layer backend` (or the
+   backend half of `both` lands first), write `70-build/fe-handoff.md`: every
+   endpoint with its exact path and verbs, request and response shapes with
+   real field names, enum/lookup names and their values, error responses and
+   messages, and the identifiers of any new form sections or fields — so the
+   frontend task starts from a contract, not from re-discovery in the network
+   tab. The handoff cites the served API document as its proof; a handoff row
+   the document contradicts is a defect in this change.
 9. **Report.** Write `70-build/build-report.md`: the AC ids satisfied and any
    touched but not completed; the design decisions and what they rejected; the
    files changed, grouped by layer; the verification output; the test ids and
    API operations added; the open questions still unanswered; and what was
-   deliberately deferred, with the reason.
+   deliberately deferred, with the reason. Close in exactly one of the four D12
+   states (`COMPLETE` / `COMPLETE_WITH_NOTES` / `BLOCKED` / `NEEDS_INFO`), with
+   the real verification output attached to `COMPLETE` and a recommended answer
+   attached to `NEEDS_INFO`.
 
 ## Boundaries
 
